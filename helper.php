@@ -66,6 +66,11 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             return false;
         }
 
+        // register our custom aggregate function
+        sqlite_create_aggregate($this->db,'group_concat',
+                                array($this,'_sqlite_group_concat_step'),
+                                array($this,'_sqlite_group_concat_finalize'), 2);
+
         $this->_updatedb($init,$updatedir);
         return true;
     }
@@ -244,6 +249,27 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      */
     function quote_string($string){
         return "'".sqlite_escape_string($string)."'";
+    }
+
+
+    /**
+     * Aggregation function for SQLite
+     *
+     * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
+     */
+    function _sqlite_group_concat_step(&$context, $string, $separator = ',') {
+         $context['sep']    = $separator;
+         $context['data'][] = $string;
+    }
+
+    /**
+     * Aggregation function for SQLite
+     *
+     * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
+     */
+    function _sqlite_group_concat_finalize(&$context) {
+         $context['data'] = array_unique($context['data']);
+         return join($context['sep'],$context['data']);
     }
 
 
