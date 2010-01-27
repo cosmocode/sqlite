@@ -32,14 +32,26 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
 
         echo $this->locale_xhtml('intro');
 
-        if($_REQUEST['db']){
+        if($_REQUEST['db'] && checkSecurityToken()){
 
             echo '<h2>'.$this->getLang('db').' '.hsc($_REQUEST['db']).'</h2>';
             echo '<div class="level2">';
 
             echo '<ul>';
-            echo '<li><div class="li"><a href="'.wl($ID,array('do'=>'admin','page'=>'sqlite','db'=>$_REQUEST['db'],'sql'=>'SELECT name,sql FROM sqlite_master WHERE type=\'table\' ORDER BY name')).'">'.$this->getLang('table').'</a></li>';
-            echo '<li><div class="li"><a href="'.wl($ID,array('do'=>'admin','page'=>'sqlite','db'=>$_REQUEST['db'],'sql'=>'SELECT name,sql FROM sqlite_master WHERE type=\'index\' ORDER BY name')).'">'.$this->getLang('index').'</a></li>';
+            echo '<li><div class="li"><a href="'.
+                    wl($ID,array('do'     => 'admin',
+                                 'page'   => 'sqlite',
+                                 'db'     => $_REQUEST['db'],
+                                 'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'table\' ORDER BY name',
+                                 'sectok' => getSecurityToken())).
+                 '">'.$this->getLang('table').'</a></li>';
+            echo '<li><div class="li"><a href="'.
+                    wl($ID,array('do'     => 'admin',
+                                 'page'   => 'sqlite',
+                                 'db'     => $_REQUEST['db'],
+                                 'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'index\' ORDER BY name',
+                                 'sectok' => getSecurityToken())).
+                 '">'.$this->getLang('index').'</a></li>';
             echo '</ul>';
 
             $form = new Doku_Form(array());
@@ -107,7 +119,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
         foreach($dbfiles as $file){
             $db = basename($file,'.sqlite');
             $toc[] = array(
-                        'link'  => wl($ID,array('do'=>'admin','page'=>'sqlite','db'=>$db)),
+                        'link'  => wl($ID,array('do'=>'admin','page'=>'sqlite','db'=>$db,'sectok'=>getSecurityToken())),
                         'title' => $this->getLang('db').' '.$db,
                         'level' => 1,
                         'type'  => 'ul',
