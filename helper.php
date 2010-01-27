@@ -199,11 +199,11 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         $err = '';
         $res = @sqlite_query($this->db,$sql,SQLITE_ASSOC,$err);
         if($err){
-            msg($err.' - '.hsc($sql),-1);
+            msg($err.':<br /><pre>'.hsc($sql).'</pre>',-1);
             return false;
         }elseif(!$res){
             msg(sqlite_error_string(sqlite_last_error($this->db)).
-                ' - '.hsc($sql),-1);
+                ':<br /><pre>'.hsc($sql).'</pre>',-1);
             return false;
         }
 
