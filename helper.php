@@ -144,6 +144,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             $s = preg_replace('!^\s*--.*$!m', '', $s);
             $s = trim($s);
             if(!$s) continue;
+
+
             $res = $this->query("$s;");
             if ($res === false) {
                 sqlite_query($this->db, 'ROLLBACK TRANSACTION');
@@ -152,6 +154,159 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
 
         return ($version == $this->_currentDBversion());
+    }
+
+    /**
+     * Emulate ALTER TABLE
+     *
+     * The ALTER TABLE syntax is parsed and then emulated using a
+     * temporary table
+     *
+     * @author <jon@jenseng.com>
+     * @link   http://code.jenseng.com/db/
+     */
+    function _altertable($table,$alterdefs){
+        $result = $this->query("SELECT sql,name,type
+                                  FROM sqlite_master
+                                 WHERE tbl_name = '$table'
+                              ORDER BY type DESC");
+        if(!$result || sqlite_num_rows($result)<=0){
+            msg("ALTER TABLE failed, no such table '".hsc($table)."'",-1);
+            return false;
+        }
+
+        $row = sqlite_fetch_array($result); //table sql
+        $tmpname = 't'.time();
+
+        $origsql = trim(preg_replace("/[\s]+/"," ",
+                        str_replace(",",", ",
+                        preg_replace('/\)$/',' )',
+                        preg_replace("/[\(]/","( ",$row['sql'],1)))));
+        $createtemptableSQL = 'CREATE TEMPORARY '.substr(trim(preg_replace("'".$table."'",$tmpname,$origsql,1)),6);
+        $createindexsql = array();
+        $i = 0;
+        $defs = preg_split("/[,]+/",$alterdefs,-1,PREG_SPLIT_NO_EMPTY);
+        $prevword = $table;
+        $oldcols = preg_split("/[,]+/",substr(trim($createtemptableSQL),strpos(trim($createtemptableSQL),'(')+1),-1,PREG_SPLIT_NO_EMPTY);
+        $newcols = array();
+
+        for($i=0;$i<sizeof($oldcols);$i++){
+            $colparts = preg_split("/[\s]+/",$oldcols[$i],-1,PREG_SPLIT_NO_EMPTY);
+            $oldcols[$i] = $colparts[0];
+            $newcols[$colparts[0]] = $colparts[0];
+        }
+        $newcolumns = '';
+        $oldcolumns = '';
+        reset($newcols);
+        while(list($key,$val) = each($newcols)){
+            $newcolumns .= ($newcolumns?', ':'').$val;
+            $oldcolumns .= ($oldcolumns?', ':'').$key;
+        }
+        $copytotempsql = 'INSERT INTO '.$tmpname.'('.$newcolumns.') SELECT '.$oldcolumns.' FROM '.$table;
+        $dropoldsql = 'DROP TABLE '.$table;
+        $createtesttableSQL = $createtemptableSQL;
+
+        foreach($defs as $def){
+            $defparts = preg_split("/[\s]+/",$def,-1,PREG_SPLIT_NO_EMPTY);
+            $action = strtolower($defparts[0]);
+            switch($action){
+                case 'add':
+                    if(sizeof($defparts) < 2){
+                        msg('ALTER TABLE: not enough arguments for ADD statement',-1);
+                        return false;
+                    }
+                    $createtesttableSQL = substr($createtesttableSQL,0,strlen($createtesttableSQL)-1).',';
+                    for($i=1;$i<sizeof($defparts);$i++)
+                        $createtesttableSQL.=' '.$defparts[$i];
+                    $createtesttableSQL.=')';
+                    break;
+
+                case 'change':
+                    if(sizeof($defparts) <= 3){
+                        msg('ALTER TABLE: near "'.$defparts[0].($defparts[1]?' '.$defparts[1]:'').($defparts[2]?' '.$defparts[2]:'').'": syntax error',-1);
+                        return false;
+                    }
+
+                    if($severpos = strpos($createtesttableSQL,' '.$defparts[1].' ')){
+                        if($newcols[$defparts[1]] != $defparts[1]){
+                            msg('ALTER TABLE: unknown column "'.$defparts[1].'" in "'.$table.'"',-1);
+                            return false;
+                        }
+                        $newcols[$defparts[1]] = $defparts[2];
+                        $nextcommapos = strpos($createtesttableSQL,',',$severpos);
+                        $insertval = '';
+                        for($i=2;$i<sizeof($defparts);$i++)
+                            $insertval.=' '.$defparts[$i];
+                        if($nextcommapos)
+                            $createtesttableSQL = substr($createtesttableSQL,0,$severpos).$insertval.substr($createtesttableSQL,$nextcommapos);
+                        else
+                            $createtesttableSQL = substr($createtesttableSQL,0,$severpos-(strpos($createtesttableSQL,',')?0:1)).$insertval.')';
+                    } else {
+                        msg('ALTER TABLE: unknown column "'.$defparts[1].'" in "'.$table.'"',-1);
+                        return false;
+                    }
+                    break;
+                case 'drop':
+                    if(sizeof($defparts) < 2){
+                        msg('ALTER TABLE: near "'.$defparts[0].($defparts[1]?' '.$defparts[1]:'').'": syntax error',-1);
+                        return false;
+                    }
+                    if($severpos = strpos($createtesttableSQL,' '.$defparts[1].' ')){
+                        $nextcommapos = strpos($createtesttableSQL,',',$severpos);
+                        if($nextcommapos)
+                            $createtesttableSQL = substr($createtesttableSQL,0,$severpos).substr($createtesttableSQL,$nextcommapos + 1);
+                        else
+                            $createtesttableSQL = substr($createtesttableSQL,0,$severpos-(strpos($createtesttableSQL,',')?0:1) - 1).')';
+                        unset($newcols[$defparts[1]]);
+                    }else{
+                        msg('ALTER TABLE: unknown column "'.$defparts[1].'" in "'.$table.'"',-1);
+                        return false;
+                    }
+                    break;
+                default:
+                    msg('ALTER TABLE: near "'.$prevword.'": syntax error',-1);
+                    return false;
+            }
+            $prevword = $defparts[sizeof($defparts)-1];
+        }
+
+        // this block of code generates a test table simply to verify that the
+        // columns specifed are valid in an sql statement
+        // this ensures that no reserved words are used as columns, for example
+        $res = $this->query($createtesttableSQL);
+        if($res === false) return false;
+
+        $droptempsql = 'DROP TABLE '.$tmpname;
+        $res = $this->query($droptempsql);
+        if($res === false) return false;
+
+
+        $createnewtableSQL = 'CREATE '.substr(trim(preg_replace("'".$tmpname."'",$table,$createtesttableSQL,1)),17);
+        $newcolumns = '';
+        $oldcolumns = '';
+        reset($newcols);
+        while(list($key,$val) = each($newcols)){
+            $newcolumns .= ($newcolumns?', ':'').$val;
+            $oldcolumns .= ($oldcolumns?', ':'').$key;
+        }
+
+        $copytonewsql = 'INSERT INTO '.$table.'('.$newcolumns.') SELECT '.$oldcolumns.' FROM '.$tmpname;
+
+        $res = $this->query($createtemptableSQL); //create temp table
+        if($res === false) return false;
+        $res = $this->query($copytotempsql); //copy to table
+        if($res === false) return false;
+        $res = $this->query($dropoldsql); //drop old table
+        if($res === false) return false;
+
+        $res = $this->query($createnewtableSQL); //recreate original table
+        if($res === false) return false;
+        $res = $this->query($copytonewsql); //copy back to original table
+        if($res === false) return false;
+        $res = $this->query($droptempsql); //drop temp table
+        if($res === false) return false;
+
+        return $res; // return a valid resource
     }
 
     /**
@@ -168,6 +323,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         // get function arguments
         $args = func_get_args();
         $sql  = trim(array_shift($args));
+        $sql  = rtrim($sql,';');
 
         if(!$sql){
             msg('No SQL statement given',-1);
@@ -193,6 +349,11 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         while( ($part = array_shift($parts)) !== null ){
             $sql .= $part;
             $sql .= array_shift($args);
+        }
+
+        // intercept ALTER TABLE statements
+        if(preg_match('/^ALTER\s+TABLE\s+([\w\.]+)\s+(.*)/i',$sql,$match)){
+            return $this->_altertable($match[1],$match[2]);
         }
 
         // execute query
