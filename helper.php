@@ -164,26 +164,43 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      *
      * @author <jon@jenseng.com>
      * @link   http://code.jenseng.com/db/
+     * @author Andreas Gohr <gohr@cosmocode.de>
      */
     function _altertable($table,$alterdefs){
+
+        // load original table definition SQL
         $result = $this->query("SELECT sql,name,type
                                   FROM sqlite_master
                                  WHERE tbl_name = '$table'
-                              ORDER BY type DESC");
-        if(!$result || sqlite_num_rows($result)<=0){
+                                   AND type = 'table'");
+
+        if(($result === false) || (sqlite_num_rows($result)<=0)){
             msg("ALTER TABLE failed, no such table '".hsc($table)."'",-1);
             return false;
         }
+        $row = sqlite_fetch_array($result);
 
-        $row = sqlite_fetch_array($result); //table sql
+        // prepare temporary table SQL
         $tmpname = 't'.time();
-
         $origsql = trim(preg_replace("/[\s]+/"," ",
                         str_replace(",",", ",
                         preg_replace('/\)$/',' )',
                         preg_replace("/[\(]/","( ",$row['sql'],1)))));
         $createtemptableSQL = 'CREATE TEMPORARY '.substr(trim(preg_replace("'".$table."'",$tmpname,$origsql,1)),6);
         $createindexsql = array();
+
+        // load indexes to reapply later
+        $result = $this->query("SELECT sql,name,type
+                                  FROM sqlite_master
+                                 WHERE tbl_name = '$table'
+                                   AND type = 'index'");
+        if(!$result){
+            $indexes = array();
+        }else{
+            $indexes = $this->res2arr($result);
+        }
+
+
         $i = 0;
         $defs = preg_split("/[,]+/",$alterdefs,-1,PREG_SPLIT_NO_EMPTY);
         $prevword = $table;
@@ -303,6 +320,12 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         if($res === false) return false;
         $res = $this->query($copytonewsql); //copy back to original table
         if($res === false) return false;
+
+        foreach($indexes as $index){ // readd indexes
+            $res = $this->query($index['sql']);
+            if($res === false) return false;
+        }
+
         $res = $this->query($droptempsql); //drop temp table
         if($res === false) return false;
 
