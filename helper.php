@@ -456,7 +456,12 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
          return join($context['sep'],$context['data']);
     }
 
-
+    /**
+     * Keep separate instances for every call to keep database connections
+     */
+    function isSingleton() {
+         return false;
+    }
 }
 
 // vim:ts=4:sw=4:et:enc=utf-8:
