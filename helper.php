@@ -418,6 +418,13 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         return sqlite_fetch_array($res);
     }
 
+    /**
+     * Return the first value from the first row.
+     */
+    function res2single($res)
+    {
+      return sqlite_fetch_single($res);
+    }
 
     /**
      * Join the given values and quote them for SQL insertion
@@ -436,6 +443,15 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     }
 
 
+    /**
+     * Escape string for sql
+     */
+    function escape_string($str)
+    {
+        return sqlite_escape_string($str);
+    }
+    
+    
     /**
      * Aggregation function for SQLite
      *
@@ -461,6 +477,31 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      */
     function isSingleton() {
          return false;
+    }
+    
+     /**
+     * fetch the next row as zero indexed array
+     */
+    function res_fetch_array($res)
+    {
+      return sqlite_fetch_array($res, SQLITE_NUM);
+    }
+    
+    
+    /**
+     * fetch the next row as assocative array
+     */
+    function res_fetch_assoc($res)
+    {
+      return sqlite_fetch_array($res, SQLITE_ASSOC);
+    }
+    
+    
+    /**
+    * Count the number of records in rsult
+    */
+    function res2count($res) {
+        return sqlite_num_rows($res);
     }
 }
 
