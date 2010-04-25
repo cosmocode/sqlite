@@ -117,7 +117,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
         $dbfiles = glob($conf['metadir'].'/*.sqlite');
 
 
-        foreach($dbfiles as $file){
+        if(is_array($dbfiles)) foreach($dbfiles as $file){
             $db = basename($file,'.sqlite');
             $toc[] = array(
                         'link'  => wl($ID,array('do'=>'admin','page'=>'sqlite','db'=>$db,'sectok'=>getSecurityToken())),
