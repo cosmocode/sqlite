@@ -503,6 +503,15 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     function res2count($res) {
         return sqlite_num_rows($res);
     }
+    
+    
+    /**
+    * Count the number of records changed last time
+    */
+    function countChanges($db, $res)
+    {
+      return sqlite_changes($db);
+    }
 }
 
 // vim:ts=4:sw=4:et:enc=utf-8:
