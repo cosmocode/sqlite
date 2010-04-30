@@ -95,13 +95,14 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
           $fileextension = '.sqlite3';
         }
         
-        $dbfile = $conf['metadir'].'/'.$dbname.$fileextension;
-        $init   = (!@file_exists($dbfile) || ((int) @filesize($dbfile)) < 3);
+        $this->dbfile = $conf['metadir'].'/'.$dbname.$fileextension;
+        
+        $init   = (!@file_exists($this->dbfile) || ((int) @filesize($this->dbfile)) < 3);
         
         if($this->extension == DOKU_EXT_SQLITE)
         {
           $error='';
-          $this->db = sqlite_open($dbfile, 0666, $error);
+          $this->db = sqlite_open($this->dbfile, 0666, $error);
           if(!$this->db){
               msg("SQLite: failed to open SQLite ".$this->dbname." database ($error)",-1);
               return false;
@@ -114,7 +115,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
         else
         {
-          $dsn = 'sqlite:'.$dbfile;
+          $dsn = 'sqlite:'.$this->dbfile;
           
           try {
               $this->db = new PDO($dsn);
@@ -123,8 +124,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
               return false;
           }
           $this->db->sqliteCreateAggregate('group_concat',
-                                  array($this,'_sqlite_group_concat_step'),
-                                  array($this,'_sqlite_group_concat_finalize'));
+                                  array($this,'_pdo_group_concat_step'),
+                                  array($this,'_pdo_group_concat_finalize'));
         }
           
         $this->_updatedb($init,$updatedir);
@@ -606,12 +607,34 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     }
     
     
+    
     /**
-     * Aggregation function for SQLite
+    * Aggregation function for SQLite
+    *
+    * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
+    */
+    function _sqlite_group_concat_step(&$context, $string, $separator = ',') {
+         $context['sep'] = $separator;
+         $context['data'][] = $string;
+    }
+
+    /**
+    * Aggregation function for SQLite
+    *
+    * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
+    */
+    function _sqlite_group_concat_finalize(&$context) {
+         $context['data'] = array_unique($context['data']);
+         return join($context['sep'],$context['data']);
+    }
+    
+    
+    /**
+     * Aggregation function for SQLite via PDO
      *
      * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
      */
-    function _sqlite_group_concat_step(&$context, $rownumber, $string, $separator = ',') {
+    function _pdo_group_concat_step(&$context, $rownumber, $string, $separator = ',') {
          if(is_null($context))
          {
            $context = array(
@@ -624,12 +647,12 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
          return $context;
     }
 
-    /**
-     * Aggregation function for SQLite
+     /**
+     * Aggregation function for SQLite via PDO 
      *
      * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
      */
-    function _sqlite_group_concat_finalize(&$context, $rownumber)
+    function _pdo_group_concat_finalize(&$context, $rownumber)
     {
         if(!is_array($context))
         {
