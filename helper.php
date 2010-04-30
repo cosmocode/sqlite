@@ -213,6 +213,10 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
                 sqlite_query($this->db, 'ROLLBACK TRANSACTION');
                 return false;
               }
+              else
+              {
+                return false;
+              }
             }
         }
 
