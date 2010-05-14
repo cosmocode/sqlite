@@ -15,12 +15,13 @@ if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
 
 if (!defined('DOKU_EXT_SQLITE')) define('DOKU_EXT_SQLITE', 'sqlite');
 if (!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
+if (!defined('DOKU_DEFAULT_EXT')) define('DOKU_DEFAULT_EXT', DOKU_EXT_SQLITE);
 
 
 class helper_plugin_sqlite extends DokuWiki_Plugin {
     var $db     = null;
     var $dbname = '';
-    var $extension = false;
+    var $extension = DOKU_DEFAULT_EXT;
     function getInfo() {
         return confToHash(dirname(__FILE__).'plugin.info.txt');
     }
@@ -67,7 +68,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      */
     function init($dbname,$updatedir){
         global $conf;
-
+        
         // check for already open DB
         if($this->db){
             if($this->dbname == $dbname){
@@ -148,8 +149,10 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      * @param bool   $init      - true if this is a new database to initialize
      * @param string $updatedir - Database update infos
      */
-    function _updatedb($init,$updatedir){
+    function _updatedb($init,$updatedir)
+    {
         if($init){
+         
             $current = 0;
         }else{
             $current = $this->_currentDBversion();
@@ -162,16 +165,13 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         // in case of init, add versioning table
         if($init){
             if(!$this->_runupdatefile(dirname(__FILE__).'/db.sql',0)){
-                if($this->extension == DOKU_EXT_SQLITE)
-                {
                   msg('SQLite: '.$this->dbname.' database upgrade failed for version ', -1);
-                }
                 return false;
             }
         }
 
         $latest  = (int) trim(io_readFile($updatedir.'/latest.version'));
-
+        
         // all up to date?
         if($current >= $latest) return true;
         for($i=$current+1; $i<=$latest; $i++){
@@ -179,8 +179,6 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             if(file_exists($file)){
                 if(!$this->_runupdatefile($file,$i)){
                     msg('SQLite: '.$this->dbname.' database upgrade failed for version '.$i, -1);
-
-
                     return false;
                 }
             }
@@ -194,7 +192,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      */
     function _runupdatefile($file,$version){
         $sql  = io_readFile($file,false);
-
+        
         $sql = explode(";",$sql);
         array_unshift($sql,'BEGIN TRANSACTION');
         array_push($sql,"INSERT OR REPLACE INTO opts (val,opt) VALUES ($version,'dbversion')");
