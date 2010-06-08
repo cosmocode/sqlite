@@ -15,7 +15,7 @@ if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
 
 if (!defined('DOKU_EXT_SQLITE')) define('DOKU_EXT_SQLITE', 'sqlite');
 if (!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
-if (!defined('DOKU_DEFAULT_EXT')) define('DOKU_DEFAULT_EXT', DOKU_EXT_SQLITE);
+if (!defined('DOKU_DEFAULT_EXT')) define('DOKU_DEFAULT_EXT', null);
 
 
 class helper_plugin_sqlite extends DokuWiki_Plugin {
@@ -31,7 +31,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      */
     function helper_plugin_sqlite(){
       
-      if(!$this->extension)
+     if(!$this->extension)
       {
         if (!extension_loaded('sqlite')) {
             $prefix = (PHP_SHLIB_SUFFIX === 'dll') ? 'php_' : '';
@@ -56,6 +56,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
       }
       
       if(!$this->extension)
+        
       {
         msg('SQLite & PDO SQLite support missing in this PHP install - plugin will not work',-1);
       }
