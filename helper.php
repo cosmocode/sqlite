@@ -353,8 +353,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             return false;
         }
 
-        if(is_array($args[0])) $args = $args[0];
         $argc = count($args);
+        if($argc > 0 && is_array($args[0])) $args = $args[0];
 
         // check number of arguments
         if($argc < substr_count($sql,'?')){
