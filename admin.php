@@ -44,14 +44,14 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                                  'db'     => $_REQUEST['db'],
                                  'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'table\' ORDER BY name',
                                  'sectok' => getSecurityToken())).
-                 '">'.$this->getLang('table').'</a></li>';
+                 '">'.$this->getLang('table').'</a></div></li>';
             echo '<li><div class="li"><a href="'.
                     wl($ID,array('do'     => 'admin',
                                  'page'   => 'sqlite',
                                  'db'     => $_REQUEST['db'],
                                  'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'index\' ORDER BY name',
                                  'sectok' => getSecurityToken())).
-                 '">'.$this->getLang('index').'</a></li>';
+                 '">'.$this->getLang('index').'</a></div></li>';
             echo '</ul>';
 
             $form = new Doku_Form(array());
