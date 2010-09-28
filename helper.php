@@ -105,7 +105,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         // in case of init, add versioning table
         if($init){
             if(!$this->_runupdatefile(dirname(__FILE__).'/db.sql',0)){
-                msg('SQLite: '.$this->dbname.' database upgrade failed for version '.$i, -1);
+                msg('SQLite: '.$this->dbname.' database initialization failed', -1);
                 return false;
             }
         }
@@ -207,7 +207,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         $oldcols = preg_split("/[,]+/",substr(trim($createtemptableSQL),strpos(trim($createtemptableSQL),'(')+1),-1,PREG_SPLIT_NO_EMPTY);
         $newcols = array();
 
-        for($i=0;$i<sizeof($oldcols);$i++){
+        for($i=0;$i<count($oldcols);$i++){
             $colparts = preg_split("/[\s]+/",$oldcols[$i],-1,PREG_SPLIT_NO_EMPTY);
             $oldcols[$i] = $colparts[0];
             $newcols[$colparts[0]] = $colparts[0];
@@ -228,18 +228,18 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             $action = strtolower($defparts[0]);
             switch($action){
                 case 'add':
-                    if(sizeof($defparts) < 2){
+                    if(count($defparts) < 2){
                         msg('ALTER TABLE: not enough arguments for ADD statement',-1);
                         return false;
                     }
                     $createtesttableSQL = substr($createtesttableSQL,0,strlen($createtesttableSQL)-1).',';
-                    for($i=1;$i<sizeof($defparts);$i++)
+                    for($i=1;$i<count($defparts);$i++)
                         $createtesttableSQL.=' '.$defparts[$i];
                     $createtesttableSQL.=')';
                     break;
 
                 case 'change':
-                    if(sizeof($defparts) <= 3){
+                    if(count($defparts) <= 3){
                         msg('ALTER TABLE: near "'.$defparts[0].($defparts[1]?' '.$defparts[1]:'').($defparts[2]?' '.$defparts[2]:'').'": syntax error',-1);
                         return false;
                     }
@@ -252,7 +252,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
                         $newcols[$defparts[1]] = $defparts[2];
                         $nextcommapos = strpos($createtesttableSQL,',',$severpos);
                         $insertval = '';
-                        for($i=2;$i<sizeof($defparts);$i++)
+                        for($i=2;$i<count($defparts);$i++)
                             $insertval.=' '.$defparts[$i];
                         if($nextcommapos)
                             $createtesttableSQL = substr($createtesttableSQL,0,$severpos).$insertval.substr($createtesttableSQL,$nextcommapos);
@@ -264,7 +264,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
                     }
                     break;
                 case 'drop':
-                    if(sizeof($defparts) < 2){
+                    if(count($defparts) < 2){
                         msg('ALTER TABLE: near "'.$defparts[0].($defparts[1]?' '.$defparts[1]:'').'": syntax error',-1);
                         return false;
                     }
@@ -284,7 +284,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
                     msg('ALTER TABLE: near "'.$prevword.'": syntax error',-1);
                     return false;
             }
-            $prevword = $defparts[sizeof($defparts)-1];
+            $prevword = $defparts[count($defparts)-1];
         }
 
         // this block of code generates a test table simply to verify that the
