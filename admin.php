@@ -79,7 +79,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                     $res = $DBI->query("$s;");
                     if ($res === false) continue;
 
-                    msg(sqlite_num_rows($res).' affected rows',1);
+                    msg($DBI->res2count($res).' affected rows',1);
                     $result = $DBI->res2arr($res);
                     if(!count($result)) continue;
 
