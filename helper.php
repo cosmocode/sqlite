@@ -30,7 +30,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      * constructor
      */
     function helper_plugin_sqlite(){
-      
+
      if(!$this->extension)
       {
         if (!extension_loaded('sqlite')) {
@@ -42,21 +42,21 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
            $this->extension = DOKU_EXT_SQLITE;
         }
       }
-      
+
       if(!$this->extension)
       {
         if (!extension_loaded('pdo_sqlite')) {
             $prefix = (PHP_SHLIB_SUFFIX === 'dll') ? 'php_' : '';
             if(function_exists('dl')) @dl($prefix . 'pdo_sqlite.' . PHP_SHLIB_SUFFIX);
         }
-        
+
         if(class_exists('pdo')){
             $this->extension = DOKU_EXT_PDO;
         }
       }
-      
+
       if(!$this->extension)
-        
+
       {
         msg('SQLite & PDO SQLite support missing in this PHP install - plugin will not work',-1);
       }
@@ -69,7 +69,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      */
     function init($dbname,$updatedir){
         global $conf;
-        
+
         // check for already open DB
         if($this->db){
             if($this->dbname == $dbname){
@@ -90,17 +90,17 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
 
         $this->dbname = $dbname;
-        
+
         $fileextension = '.sqlite';
         if($this->extension == DOKU_EXT_PDO)
         {
           $fileextension = '.sqlite3';
         }
-        
+
         $this->dbfile = $conf['metadir'].'/'.$dbname.$fileextension;
-        
+
         $init   = (!@file_exists($this->dbfile) || ((int) @filesize($this->dbfile)) < 3);
-        
+
         if($this->extension == DOKU_EXT_SQLITE)
         {
           $error='';
@@ -109,7 +109,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
               msg("SQLite: failed to open SQLite ".$this->dbname." database ($error)",-1);
               return false;
           }
-  
+
           // register our custom aggregate function
           sqlite_create_aggregate($this->db,'group_concat',
                                   array($this,'_sqlite_group_concat_step'),
@@ -118,7 +118,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         else
         {
           $dsn = 'sqlite:'.$this->dbfile;
-          
+
           try {
               $this->db = new PDO($dsn);
           } catch (PDOException $e) {
@@ -129,7 +129,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
                                   array($this,'_pdo_group_concat_step'),
                                   array($this,'_pdo_group_concat_finalize'));
         }
-          
+
         $this->_updatedb($init,$updatedir);
         return true;
     }
@@ -153,7 +153,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     function _updatedb($init,$updatedir)
     {
         if($init){
-         
+
             $current = 0;
         }else{
             $current = $this->_currentDBversion();
@@ -172,7 +172,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
 
         $latest  = (int) trim(io_readFile($updatedir.'/latest.version'));
-        
+
         // all up to date?
         if($current >= $latest) return true;
         for($i=$current+1; $i<=$latest; $i++){
@@ -193,7 +193,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      */
     function _runupdatefile($file,$version){
         $sql  = io_readFile($file,false);
-        
+
         $sql = explode(";",$sql);
         array_unshift($sql,'BEGIN TRANSACTION');
         array_push($sql,"INSERT OR REPLACE INTO opts (val,opt) VALUES ($version,'dbversion')");
@@ -244,7 +244,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             msg("ALTER TABLE failed, no such table '".hsc($table)."'",-1);
             return false;
         }
-        
+
         if($this->extension == DOKU_EXT_SQLITE )
         {
           $row = sqlite_fetch_array($result);
@@ -253,13 +253,13 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         {
            $row = $result->fetch(PDO::FETCH_ASSOC);
         }
-        
+
         if($row === false){
             msg("ALTER TABLE failed, table '".hsc($table)."' had no master data",-1);
             return false;
         }
-        
-        
+
+
         // prepare temporary table SQL
         $tmpname = 't'.time();
         $origsql = trim(preg_replace("/[\s]+/"," ",
@@ -480,9 +480,9 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         else
         {
           $result = false;
-          
+
           $res = $this->db->query($sql);
-           
+
           if(!$res){
             $err = $this->db->errorInfo();
               msg($err[2].':<br /><pre>'.hsc($sql).'</pre>',-1);
@@ -538,7 +538,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
           {
             return false;
           }
-          
+
           if(!isset($data[$rownum]))
           {
             return false;
@@ -608,9 +608,9 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         return trim($this->db->quote($str), "'");
       }
     }
-    
-    
-    
+
+
+
     /**
     * Aggregation function for SQLite
     *
@@ -630,8 +630,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
          $context['data'] = array_unique($context['data']);
          return join($context['sep'],$context['data']);
     }
-    
-    
+
+
     /**
      * Aggregation function for SQLite via PDO
      *
@@ -645,13 +645,13 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
              'data' => array()
              );
          }
-         
+
          $context['data'][] = $string;
          return $context;
     }
 
      /**
-     * Aggregation function for SQLite via PDO 
+     * Aggregation function for SQLite via PDO
      *
      * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
      */
@@ -671,7 +671,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     function isSingleton() {
          return false;
     }
-    
+
      /**
      * fetch the next row as zero indexed array
      */
@@ -686,8 +686,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         return $res->fetch(PDO::FETCH_NUM);
       }
     }
-    
-    
+
+
     /**
      * fetch the next row as assocative array
      */
@@ -702,8 +702,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
        return $res->fetch(PDO::FETCH_ASSOC);
       }
     }
-    
-    
+
+
     /**
     * Count the number of records in rsult
     */
@@ -724,8 +724,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         return false;
       }
     }
-    
-    
+
+
     /**
     * Count the number of records changed last time
     */
