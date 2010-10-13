@@ -501,7 +501,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         {
           if(!sqlite_num_rows($res)) return $data;
           sqlite_rewind($res);
-          while(($row = sqlite_fetch_array($res)) !== false){
+          while(($row = sqlite_fetch_array($res, SQLITE_ASSOC)) !== false){
               $data[] = $row;
           }
         }
@@ -526,7 +526,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
           if(!@sqlite_seek($res,$rownum)){
               return false;
           }
-          return sqlite_fetch_array($res);
+          return sqlite_fetch_array($res, SQLITE_ASSOC);
         }
         else
         {
