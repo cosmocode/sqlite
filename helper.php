@@ -15,13 +15,12 @@ if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
 
 if (!defined('DOKU_EXT_SQLITE')) define('DOKU_EXT_SQLITE', 'sqlite');
 if (!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
-if (!defined('DOKU_DEFAULT_EXT')) define('DOKU_DEFAULT_EXT', null);
 
 
 class helper_plugin_sqlite extends DokuWiki_Plugin {
     var $db     = null;
     var $dbname = '';
-    var $extension = DOKU_DEFAULT_EXT;
+    var $extension = null;
     function getInfo() {
         return confToHash(dirname(__FILE__).'plugin.info.txt');
     }
@@ -30,18 +29,6 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      * constructor
      */
     function helper_plugin_sqlite(){
-
-     if(!$this->extension)
-      {
-        if (!extension_loaded('sqlite')) {
-            $prefix = (PHP_SHLIB_SUFFIX === 'dll') ? 'php_' : '';
-            if(function_exists('dl')) @dl($prefix . 'sqlite.' . PHP_SHLIB_SUFFIX);
-        }
-
-        if(function_exists('sqlite_open')){
-           $this->extension = DOKU_EXT_SQLITE;
-        }
-      }
 
       if(!$this->extension)
       {
@@ -52,6 +39,18 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
 
         if(class_exists('pdo')){
             $this->extension = DOKU_EXT_PDO;
+        }
+      }
+
+      if(!$this->extension)
+      {
+        if (!extension_loaded('sqlite')) {
+            $prefix = (PHP_SHLIB_SUFFIX === 'dll') ? 'php_' : '';
+            if(function_exists('dl')) @dl($prefix . 'sqlite.' . PHP_SHLIB_SUFFIX);
+        }
+
+        if(function_exists('sqlite_open')){
+           $this->extension = DOKU_EXT_SQLITE;
         }
       }
 
@@ -92,10 +91,6 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         $this->dbname = $dbname;
 
         $fileextension = '.sqlite';
-        if($this->extension == DOKU_EXT_PDO)
-        {
-          $fileextension = '.sqlite3';
-        }
 
         $this->dbfile = $conf['metadir'].'/'.$dbname.$fileextension;
 
