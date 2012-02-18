@@ -161,7 +161,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         // in case of init, add versioning table
         if($init){
             if(!$this->_runupdatefile(dirname(__FILE__).'/db.sql',0)){
-                msg('SQLite: '.$this->dbname.' database initialization failed', -1);
+                  msg('SQLite: '.$this->dbname.' database upgrade failed for version ', -1);
                 return false;
             }
         }
