@@ -54,7 +54,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                  '">'.$this->getLang('index').'</a></div></li>';
             echo '</ul>';
 
-            $form = new Doku_Form(array());
+            $form = new Doku_Form(array('class'=>'sqliteplugin'));
             $form->startFieldset('SQL Command');
             $form->addHidden('id',$ID);
             $form->addHidden('do','admin');
@@ -131,4 +131,4 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
     }
 }
 
-// vim:ts=4:sw=4:et:enc=utf-8:
+// vim:ts=4:sw=4:et:
