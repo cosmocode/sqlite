@@ -408,6 +408,20 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     }
 
     /**
+     * Registers a User Defined Function for use in SQL statements
+     */
+    function create_function($function_name,$callback,$num_args){
+        if($this->extension == DOKU_EXT_SQLITE )
+        {
+          sqlite_create_function($this->db,$function_name,$callback,$num_args);
+        }
+        else
+        {
+          $this->db->sqliteCreateFunction($this->db,$function_name,$callback,$num_args);
+        }
+    }
+
+    /**
      * Execute a query with the given parameters.
      *
      * Takes care of escaping
