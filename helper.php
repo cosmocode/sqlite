@@ -430,7 +430,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
         else
         {
-          $this->db->sqliteCreateFunction($this->db,$function_name,$callback,$num_args);
+          $this->db->sqliteCreateFunction($function_name,$callback,$num_args);
         }
     }
 
@@ -501,8 +501,6 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
         else
         {
-          $result = false;
-
           $res = $this->db->query($sql);
 
           if(!$res){
