@@ -96,8 +96,16 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
 
         $init   = (!@file_exists($this->dbfile) || ((int) @filesize($this->dbfile)) < 3);
 
+        //first line tell the format of db file http://marc.info/?l=sqlite-users&m=109383875408202
+        $firstline=file_get_contents($this->dbfile,false,null,0,15);
+
         if($this->extension == DOKU_EXT_SQLITE)
         {
+          if($firstline=='SQLite format 3'){
+              msg("SQLite: failed to open SQLite '".$this->dbname."' database (DB has a sqlite3 format instead of sqlite2 format.)",-1);
+              return false;
+          }
+
           $error='';
           $this->db = sqlite_open($this->dbfile, 0666, $error);
           if(!$this->db){
@@ -112,6 +120,11 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
         else
         {
+          if($firstline!='SQLite format 3'){
+              msg("SQLite: failed to open SQLite '".$this->dbname."' database (DB has not a sqlite3 format.)",-1);
+              return false;
+          }
+
           $dsn = 'sqlite:'.$this->dbfile;
 
           try {
