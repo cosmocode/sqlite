@@ -555,23 +555,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
           {
             return false;
           }
-          //very dirty replication of the same functionality (really must look at cursors)
-          $data = array();
-          //do we need to rewind?
-          $data = $res->fetchAll(PDO::FETCH_ASSOC);
-          if(!count(data))
-          {
-            return false;
-          }
-
-          if(!isset($data[$rownum]))
-          {
-            return false;
-          }
-          else
-          {
-            return $data[$rownum];
-          }
+          return $res->fetch(PDO::FETCH_ASSOC,PDO::FETCH_ORI_ABS,$rownum);
         }
     }
 
@@ -590,12 +574,12 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         {
           return false;
         }
-        $data = $res->fetchAll(PDO::FETCH_NUM);
+        $data = $res->fetch(PDO::FETCH_NUM,PDO::FETCH_ORI_ABS,0);
         if(!count(data))
         {
           return false;
         }
-        return $data[0][0];
+        return $data[0];
       }
     }
 
