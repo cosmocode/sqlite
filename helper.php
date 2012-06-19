@@ -101,7 +101,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
           $error='';
           $this->db = sqlite_open($this->dbfile, 0666, $error);
           if(!$this->db){
-              msg("SQLite: failed to open SQLite ".$this->dbname." database ($error)",-1);
+              msg("SQLite: failed to open SQLite '".$this->dbname."' database ($error)",-1);
               return false;
           }
 
@@ -117,7 +117,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
           try {
               $this->db = new PDO($dsn);
           } catch (PDOException $e) {
-            msg("SQLite: failed to open SQLite ".$this->dbname." database (".$e->getMessage().")",-1);
+            msg("SQLite: failed to open SQLite '".$this->dbname."' database (".$e->getMessage().")",-1);
               return false;
           }
           $this->db->sqliteCreateAggregate('group_concat',
@@ -153,7 +153,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }else{
             $current = $this->_currentDBversion();
             if(!$current){
-                msg('SQLite: no DB version found. '.$this->dbname.' DB probably broken.',-1);
+                msg("SQLite: no DB version found. '".$this->dbname."' DB probably broken.",-1);
                 return false;
             }
         }
@@ -161,7 +161,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         // in case of init, add versioning table
         if($init){
             if(!$this->_runupdatefile(dirname(__FILE__).'/db.sql',0)){
-                  msg('SQLite: '.$this->dbname.' database upgrade failed for version ', -1);
+                  msg("SQLite: '".$this->dbname."' database upgrade failed for version ", -1);
                 return false;
             }
         }
@@ -174,7 +174,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             $file = sprintf($updatedir.'/update%04d.sql',$i);
             if(file_exists($file)){
                 if(!$this->_runupdatefile($file,$i)){
-                    msg('SQLite: '.$this->dbname.' database upgrade failed for version '.$i, -1);
+                    msg("SQLite: '".$this->dbname."' database upgrade failed for version ".$i, -1);
                     return false;
                 }
             }
