@@ -551,10 +551,6 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         {
           if(!$res) return $data;
           $data = $res->fetchAll(PDO::FETCH_ASSOC);
-          if(!count($data))
-          {
-            return false;
-          }
         }
         return $data;
     }
@@ -740,8 +736,11 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
 
 
     /**
-    * Count the number of records in result
-    */
+
+     * Count the number of records in result
+     *
+     * This function is really inperformant in PDO and should be avoided!
+     */
     function res2count($res) {
       if($this->extension == DOKU_EXT_SQLITE )
       {
@@ -751,14 +750,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
       {
         if(!$res) return false;
 
-        $regex = '/^SELECT\s+(?:ALL\s+|DISTINCT\s+)?(?:.*?)\s+FROM\s+(.*)$/i';
-        if (preg_match($regex, $res->queryString, $output) > 0) {
-            $stmt = $this->db->query("SELECT COUNT(*) FROM {$output[1]}", PDO::FETCH_NUM);
+        return count($res->fetch(PDO::FETCH_NUM));
 
-            return $stmt->fetchColumn();
-        }
-
-        return false;
       }
     }
 
