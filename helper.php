@@ -551,7 +551,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         {
           if(!$res) return $data;
           $data = $res->fetchAll(PDO::FETCH_ASSOC);
-          if(!count(data))
+          if(!count($data))
           {
             return false;
           }
@@ -573,10 +573,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
         else
         {
-          if(!$res)
-          {
-            return false;
-          }
+          if(!$res) return false;
+
           return $res->fetch(PDO::FETCH_ASSOC,PDO::FETCH_ORI_ABS,$rownum);
         }
     }
@@ -592,12 +590,10 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
       }
       else
       {
-        if(!$res)
-        {
-          return false;
-        }
+        if(!$res) return false;
+        
         $data = $res->fetch(PDO::FETCH_NUM,PDO::FETCH_ORI_ABS,0);
-        if(!count(data))
+        if(!count($data))
         {
           return false;
         }
@@ -718,6 +714,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
       }
       else
       {
+        if(!$res) return false;
+
         return $res->fetch(PDO::FETCH_NUM);
       }
     }
@@ -734,13 +732,15 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
       }
       else
       {
-       return $res->fetch(PDO::FETCH_ASSOC);
+        if(!$res) return false;
+
+        return $res->fetch(PDO::FETCH_ASSOC);
       }
     }
 
 
     /**
-    * Count the number of records in rsult
+    * Count the number of records in result
     */
     function res2count($res) {
       if($this->extension == DOKU_EXT_SQLITE )
@@ -749,6 +749,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
       }
       else
       {
+        if(!$res) return false;
+
         $regex = '/^SELECT\s+(?:ALL\s+|DISTINCT\s+)?(?:.*?)\s+FROM\s+(.*)$/i';
         if (preg_match($regex, $res->queryString, $output) > 0) {
             $stmt = $this->db->query("SELECT COUNT(*) FROM {$output[1]}", PDO::FETCH_NUM);
@@ -772,6 +774,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
       }
       else
       {
+        if(!$res) return false;
+
         return $res->rowCount();
       }
     }
