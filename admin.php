@@ -114,17 +114,27 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
         global $ID;
 
         $toc = array();
-        $dbfiles = glob($conf['metadir'].'/*.sqlite');
+        $fileextensions = array('sqlite2'=>'.sqlite','sqlite3'=>'.sqlite3');
 
-
-        if(is_array($dbfiles)) foreach($dbfiles as $file){
-            $db = basename($file,'.sqlite');
+        foreach($fileextensions as $dbformat => $fileextension){
             $toc[] = array(
-                        'link'  => wl($ID,array('do'=>'admin','page'=>'sqlite','db'=>$db,'sectok'=>getSecurityToken())),
-                        'title' => $this->getLang('db').' '.$db,
-                        'level' => 1,
-                        'type'  => 'ul',
-                     );
+                            'link'  => '',
+                            'title' => $dbformat.':',
+                            'level' => 1,
+                            'type'  => 'ul',
+                         );
+
+            $dbfiles = glob($conf['metadir'].'/*'.$fileextension);
+
+            if(is_array($dbfiles)) foreach($dbfiles as $file){
+                $db = basename($file,$fileextension);
+                $toc[] = array(
+                            'link'  => wl($ID,array('do'=>'admin','page'=>'sqlite','db'=>$db,'sectok'=>getSecurityToken())),
+                            'title' => $this->getLang('db').' '.$db,
+                            'level' => 2,
+                            'type'  => 'ul',
+                         );
+            }
         }
 
         return $toc;

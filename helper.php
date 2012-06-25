@@ -90,14 +90,19 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
 
         $this->dbname = $dbname;
 
-        $fileextension = '.sqlite';
+        // Separate the database files to prevent not-requested autoupgrades.
+        if($this->extension == DOKU_EXT_SQLITE){
+            $fileextension = '.sqlite';
+        }else{
+            $fileextension = '.sqlite3';
+        }
 
         $this->dbfile = $conf['metadir'].'/'.$dbname.$fileextension;
 
         $init   = (!@file_exists($this->dbfile) || ((int) @filesize($this->dbfile)) < 3);
 
         //first line tell the format of db file http://marc.info/?l=sqlite-users&m=109383875408202
-        $firstline=file_get_contents($this->dbfile,false,null,0,15);
+        $firstline=@file_get_contents($this->dbfile,false,null,0,15);
 
         if($this->extension == DOKU_EXT_SQLITE)
         {
@@ -120,9 +125,26 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
         else
         {
-          if($firstline!='SQLite format 3'){
-              msg("SQLite: failed to open SQLite '".$this->dbname."' database (DB has not a sqlite3 format.)",-1);
-              return false;
+          if($init){
+              $oldDbfile = substr($this->dbfile,0,-1);
+
+              if(@file_exists($oldDbfile)){
+                  $notfound_msg="SQLite: '".$this->dbname.$fileextension."' database not found. In the meta directory is '".$this->dbname.substr($fileextension,0,-1)."' available. ";
+
+                  $firstline=@file_get_contents($oldDbfile,false,null,0,15);
+                  if($firstline=='SQLite format 3'){
+                      msg($notfound_msg."PDO sqlite needs you rename manual the file extension to '.sqlite3' .",-1);
+                      return false;
+                  }else{
+                      msg($notfound_msg."PDO sqlite needs you upgrade manual this sqlite2 db to sqlite3 format.",-1);
+                      return false;
+                  }
+              }
+          }else{
+              if($firstline!='SQLite format 3'){
+                  msg("SQLite: failed to open SQLite '".$this->dbname."' database (DB has not a sqlite3 format.)",-1);
+                  return false;
+              }
           }
 
           $dsn = 'sqlite:'.$this->dbfile;
