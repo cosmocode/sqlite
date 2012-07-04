@@ -465,7 +465,10 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      * @param arguments...
      */
     function query(){
-        if(!$this->db) return false;
+        if(!$this->db) {
+            msg("SQLite: database '".$this->dbname."' missing at query ",-1);
+            return false;
+        }
 
         // get function arguments
         $args = func_get_args();
