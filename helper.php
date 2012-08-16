@@ -555,7 +555,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         {
           if(!$res) return $data;
           $mode = $assoc ? PDO::FETCH_ASSOC : PDO::FETCH_NUM;
-          $data = $res->fetchAll(PDO::FETCH_ASSOC);
+          $data = $res->fetchAll($mode);
         }
         return $data;
     }
