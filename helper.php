@@ -540,19 +540,21 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     /**
      * Returns a complete result set as array
      */
-    function res2arr($res){
+    function res2arr($res, $assoc = true){
         $data = array();
         if($this->extension == DOKU_EXT_SQLITE )
         {
           if(!sqlite_num_rows($res)) return $data;
           sqlite_rewind($res);
-          while(($row = sqlite_fetch_array($res, SQLITE_ASSOC)) !== false){
+          $mode = $assoc ? SQLITE_ASSOC : SQLITE_NUM;
+          while(($row = sqlite_fetch_array($res, $mode)) !== false){
               $data[] = $row;
           }
         }
         else
         {
           if(!$res) return $data;
+          $mode = $assoc ? PDO::FETCH_ASSOC : PDO::FETCH_NUM;
           $data = $res->fetchAll(PDO::FETCH_ASSOC);
         }
         return $data;
