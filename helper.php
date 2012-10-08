@@ -7,20 +7,19 @@
  */
 
 // must be run within Dokuwiki
-if (!defined('DOKU_INC')) die();
+if(!defined('DOKU_INC')) die();
 
-if (!defined('DOKU_LF')) define('DOKU_LF', "\n");
-if (!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
-if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
+if(!defined('DOKU_LF')) define('DOKU_LF', "\n");
+if(!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
+if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC.'lib/plugins/');
 
-if (!defined('DOKU_EXT_SQLITE')) define('DOKU_EXT_SQLITE', 'sqlite');
-if (!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
+if(!defined('DOKU_EXT_SQLITE')) define('DOKU_EXT_SQLITE', 'sqlite');
+if(!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
 
 require_once(DOKU_PLUGIN.'sqlite/classes/adapter.php');
 
 class helper_plugin_sqlite extends DokuWiki_Plugin {
     var $adapter = null;
-
 
     public function getInfo() {
         return confToHash(dirname(__FILE__).'plugin.info.txt');
@@ -36,38 +35,34 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     /**
      * constructor
      */
-    public function helper_plugin_sqlite(){
+    public function helper_plugin_sqlite() {
 
-      if(!$this->adapter)
-      {
-        if($this->existsPDOSqlite()){
-            require_once(DOKU_PLUGIN.'sqlite/classes/adapter_pdosqlite.php');
-            $this->adapter = new helper_plugin_sqlite_adapter_pdosqlite();
+        if(!$this->adapter) {
+            if($this->existsPDOSqlite()) {
+                require_once(DOKU_PLUGIN.'sqlite/classes/adapter_pdosqlite.php');
+                $this->adapter = new helper_plugin_sqlite_adapter_pdosqlite();
+            }
         }
-      }
 
-      if(!$this->adapter)
-      {
-        if($this->existsSqlite2()){
-            require_once(DOKU_PLUGIN.'sqlite/classes/adapter_sqlite2.php');
-            $this->adapter = new helper_plugin_sqlite_adapter_sqlite2();
+        if(!$this->adapter) {
+            if($this->existsSqlite2()) {
+                require_once(DOKU_PLUGIN.'sqlite/classes/adapter_sqlite2.php');
+                $this->adapter = new helper_plugin_sqlite_adapter_sqlite2();
+            }
         }
-      }
 
-      if(!$this->adapter)
-      {
-        msg('SQLite & PDO SQLite support missing in this PHP install - plugin will not work',-1);
-      }
+        if(!$this->adapter) {
+            msg('SQLite & PDO SQLite support missing in this PHP install - plugin will not work', -1);
+        }
     }
-
 
     /**
      * check availabilty of PHPs sqlite extension (for sqlite2 support)
      */
-    public function existsSqlite2(){
-        if (!extension_loaded('sqlite')) {
+    public function existsSqlite2() {
+        if(!extension_loaded('sqlite')) {
             $prefix = (PHP_SHLIB_SUFFIX === 'dll') ? 'php_' : '';
-            if(function_exists('dl')) @dl($prefix . 'sqlite.' . PHP_SHLIB_SUFFIX);
+            if(function_exists('dl')) @dl($prefix.'sqlite.'.PHP_SHLIB_SUFFIX);
         }
 
         return function_exists('sqlite_open');
@@ -76,15 +71,15 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     /**
      * check availabilty of PHP PDO sqlite3
      */
-    public function existsPDOSqlite(){
-        if (!extension_loaded('pdo_sqlite')) {
+    public function existsPDOSqlite() {
+        if(!extension_loaded('pdo_sqlite')) {
             $prefix = (PHP_SHLIB_SUFFIX === 'dll') ? 'php_' : '';
-            if(function_exists('dl')) @dl($prefix . 'pdo_sqlite.' . PHP_SHLIB_SUFFIX);
+            if(function_exists('dl')) @dl($prefix.'pdo_sqlite.'.PHP_SHLIB_SUFFIX);
         }
 
-        if(class_exists('pdo')){
-            foreach(PDO::getAvailableDrivers() as $driver){
-                if($driver=='sqlite'){
+        if(class_exists('pdo')) {
+            foreach(PDO::getAvailableDrivers() as $driver) {
+                if($driver == 'sqlite') {
                     return true;
                 }
             }
@@ -101,22 +96,22 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      * @param string $updatedir - Database update infos
      * @return bool
      */
-    public function init($dbname,$updatedir){
+    public function init($dbname, $updatedir) {
 
         $init = null; // set by initdb()
-        if(!$this->adapter->initdb($dbname,$init)) return false;
+        if(!$this->adapter->initdb($dbname, $init)) return false;
 
-        return $this->_updatedb($init,$updatedir);
+        return $this->_updatedb($init, $updatedir);
     }
 
     /**
      * Return the current Database Version
      */
-    private function _currentDBversion(){
+    private function _currentDBversion() {
         $sql = "SELECT val FROM opts WHERE opt = 'dbversion';";
         $res = $this->query($sql);
         if(!$res) return false;
-        $row = $this->res2row($res,0);
+        $row = $this->res2row($res, 0);
         return (int) $row['val'];
     }
 
@@ -127,35 +122,34 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      * @param string $updatedir - Database update infos
      * @return bool
      */
-    private function _updatedb($init,$updatedir)
-    {
-        if($init){
+    private function _updatedb($init, $updatedir) {
+        if($init) {
 
             $current = 0;
-        }else{
+        } else {
             $current = $this->_currentDBversion();
-            if(!$current){
-                msg("SQLite: no DB version found. '".$this->adapter->getDbname()."' DB probably broken.",-1);
+            if(!$current) {
+                msg("SQLite: no DB version found. '".$this->adapter->getDbname()."' DB probably broken.", -1);
                 return false;
             }
         }
 
         // in case of init, add versioning table
-        if($init){
-            if(!$this->_runupdatefile(dirname(__FILE__).'/db.sql',0)){
-                  msg("SQLite: '".$this->adapter->getDbname()."' database upgrade failed for version ", -1);
+        if($init) {
+            if(!$this->_runupdatefile(dirname(__FILE__).'/db.sql', 0)) {
+                msg("SQLite: '".$this->adapter->getDbname()."' database upgrade failed for version ", -1);
                 return false;
             }
         }
 
-        $latest  = (int) trim(io_readFile($updatedir.'/latest.version'));
+        $latest = (int) trim(io_readFile($updatedir.'/latest.version'));
 
         // all up to date?
         if($current >= $latest) return true;
-        for($i=$current+1; $i<=$latest; $i++){
-            $file = sprintf($updatedir.'/update%04d.sql',$i);
-            if(file_exists($file)){
-                if(!$this->_runupdatefile($file,$i)){
+        for($i = $current + 1; $i <= $latest; $i++) {
+            $file = sprintf($updatedir.'/update%04d.sql', $i);
+            if(file_exists($file)) {
+                if(!$this->_runupdatefile($file, $i)) {
                     msg("SQLite: '".$this->adapter->getDbname()."' database upgrade failed for version ".$i, -1);
                     return false;
                 }
@@ -168,24 +162,22 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      * Updates the database structure using the given file to
      * the given version.
      */
-    private function _runupdatefile($file,$version){
-        $sql  = io_readFile($file,false);
+    private function _runupdatefile($file, $version) {
+        $sql = io_readFile($file, false);
 
-        $sql = explode(";",$sql);
-        array_unshift($sql,'BEGIN TRANSACTION');
-        array_push($sql,"INSERT OR REPLACE INTO opts (val,opt) VALUES ($version,'dbversion')");
-        array_push($sql,"COMMIT TRANSACTION");
+        $sql = explode(";", $sql);
+        array_unshift($sql, 'BEGIN TRANSACTION');
+        array_push($sql, "INSERT OR REPLACE INTO opts (val,opt) VALUES ($version,'dbversion')");
+        array_push($sql, "COMMIT TRANSACTION");
 
-        foreach($sql as $s){
+        foreach($sql as $s) {
             $s = preg_replace('!^\s*--.*$!m', '', $s);
             $s = trim($s);
             if(!$s) continue;
 
-
             $res = $this->query("$s;");
-            if ($res === false) {
-                if($this->adapter->getName() == DOKU_EXT_SQLITE)
-                {
+            if($res === false) {
+                if($this->adapter->getName() == DOKU_EXT_SQLITE) {
                     sqlite_query($this->db, 'ROLLBACK TRANSACTION');
                 }
                 return false;
@@ -199,37 +191,37 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      * Dump db into a file in meta directory
      *
      */
-     public function dumpDatabase($dbname){
+    public function dumpDatabase($dbname) {
         global $conf;
 
-        $res = $this->query("SELECT name,sql FROM sqlite_master WHERE type='table'");
+        $res    = $this->query("SELECT name,sql FROM sqlite_master WHERE type='table'");
         $tables = $this->res2arr($res);
 
         $filename = 'dumpfile_'.$dbname.'.sql';
-        if($fp = fopen($conf['metadir'].'/'.$filename, 'w')){
+        if($fp = fopen($conf['metadir'].'/'.$filename, 'w')) {
 
             fwrite($fp, 'BEGIN TRANSACTION;'."\n");
 
-            foreach($tables as $table){
+            foreach($tables as $table) {
 
                 fwrite($fp, $table['sql'].";\n");
 
                 $sql = "SELECT * FROM ".$table['name'];
                 $res = $this->query($sql);
 
-                while($row = $this->res_fetch_array($res)){
+                while($row = $this->res_fetch_array($res)) {
 
                     $line = 'INSERT INTO '.$table['name'].' VALUES(';
-                    foreach($row as $no_entry => $entry){
-                        if($no_entry!==0){
+                    foreach($row as $no_entry => $entry) {
+                        if($no_entry !== 0) {
                             $line .= ',';
                         }
 
-                        if(is_null($entry)){
+                        if(is_null($entry)) {
                             $line .= 'NULL';
-                        }elseif(!is_numeric($entry)){
+                        } elseif(!is_numeric($entry)) {
                             $line .= $this->quote_string($entry);
-                        }else{
+                        } else {
                             //FIXME extra leading zeros are truncated e.g 1.300 (thousand three hunderd)-> 1.3
                             $line .= $entry;
                         }
@@ -240,9 +232,9 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
                 }
             }
 
-            $res = $this->query("SELECT name,sql FROM sqlite_master WHERE type='index'");
+            $res     = $this->query("SELECT name,sql FROM sqlite_master WHERE type='index'");
             $indexes = $this->res2arr($res);
-            foreach($indexes as $index){
+            foreach($indexes as $index) {
                 fwrite($fp, $index['sql'].";\n");
             }
 
@@ -250,7 +242,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
 
             fclose($fp);
             return true;
-        }else{
+        } else {
             msg('Dumping "'.hsc($dbname).'" has failed. Could not open '.$filename);
             return false;
         }
@@ -259,8 +251,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     /**
      * Registers a User Defined Function for use in SQL statements
      */
-    public function create_function($function_name,$callback,$num_args){
-        $this->adapter->create_function($function_name,$callback,$num_args);
+    public function create_function($function_name, $callback, $num_args) {
+        $this->adapter->create_function($function_name, $callback, $num_args);
     }
 
     /**
@@ -272,7 +264,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      * @internal param $arguments ...
      * @return bool|\SQLiteResult
      */
-    public function query(){
+    public function query() {
         // get function arguments
         $args = func_get_args();
 
@@ -282,59 +274,58 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     /**
      * Join the given values and quote them for SQL insertion
      */
-    public function quote_and_join($vals,$sep=',') {
-        return $this->adapter->quote_and_join($vals,$sep);
+    public function quote_and_join($vals, $sep = ',') {
+        return $this->adapter->quote_and_join($vals, $sep);
     }
 
     /**
      * Run sqlite_escape_string() on the given string and surround it
      * with quotes
      */
-    public function quote_string($string){
+    public function quote_string($string) {
         return $this->adapter->quote_string($string);
     }
 
     /**
      * Escape string for sql
      */
-    public function escape_string($str){
+    public function escape_string($str) {
         return $this->adapter->escape_string($str);
     }
 
     /**
      * Returns a complete result set as array
      */
-    public function res2arr($res, $assoc = true){
-        return $this->adapter->res2arr($res, $assoc);
+    public function res2arr($res) {
+        return $this->adapter->res2arr($res);
     }
 
     /**
      * Return the wanted row from a given result set as
      * associative array
      */
-    public function res2row($res,$rownum=0){
-        return $this->adapter->res2row($res,$rownum);
+    public function res2row($res, $rownum = 0) {
+        return $this->adapter->res2row($res, $rownum);
     }
 
     /**
      * Return the first value from the first row.
      */
-    public function res2single($res){
+    public function res2single($res) {
         return $this->adapter->res2single($res);
     }
 
-     /**
+    /**
      * fetch the next row as zero indexed array
      */
-    public function res_fetch_array($res){
+    public function res_fetch_array($res) {
         return $this->adapter->res_fetch_array($res);
     }
-
 
     /**
      * fetch the next row as assocative array
      */
-    public function res_fetch_assoc($res){
+    public function res_fetch_assoc($res) {
         return $this->adapter->res_fetch_assoc($res);
     }
 
@@ -348,9 +339,9 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     }
 
     /**
-    * Count the number of records changed last time
-    */
-    public function countChanges($db, $res){
+     * Count the number of records changed last time
+     */
+    public function countChanges($db, $res) {
         return $this->adapter->countChanges($db, $res);
     }
 
