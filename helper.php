@@ -188,67 +188,6 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     }
 
     /**
-     * Dump db into a file in meta directory
-     *
-     */
-    public function dumpDatabase($dbname) {
-        global $conf;
-
-        $res    = $this->query("SELECT name,sql FROM sqlite_master WHERE type='table'");
-        $tables = $this->res2arr($res);
-
-        $filename = 'dumpfile_'.$dbname.'.sql';
-        if($fp = fopen($conf['metadir'].'/'.$filename, 'w')) {
-
-            fwrite($fp, 'BEGIN TRANSACTION;'."\n");
-
-            foreach($tables as $table) {
-
-                fwrite($fp, $table['sql'].";\n");
-
-                $sql = "SELECT * FROM ".$table['name'];
-                $res = $this->query($sql);
-
-                while($row = $this->res_fetch_array($res)) {
-
-                    $line = 'INSERT INTO '.$table['name'].' VALUES(';
-                    foreach($row as $no_entry => $entry) {
-                        if($no_entry !== 0) {
-                            $line .= ',';
-                        }
-
-                        if(is_null($entry)) {
-                            $line .= 'NULL';
-                        } elseif(!is_numeric($entry)) {
-                            $line .= $this->quote_string($entry);
-                        } else {
-                            //FIXME extra leading zeros are truncated e.g 1.300 (thousand three hunderd)-> 1.3
-                            $line .= $entry;
-                        }
-                    }
-                    $line .= ');'."\n";
-
-                    fwrite($fp, $line);
-                }
-            }
-
-            $res     = $this->query("SELECT name,sql FROM sqlite_master WHERE type='index'");
-            $indexes = $this->res2arr($res);
-            foreach($indexes as $index) {
-                fwrite($fp, $index['sql'].";\n");
-            }
-
-            fwrite($fp, 'COMMIT;'."\n");
-
-            fclose($fp);
-            return true;
-        } else {
-            msg('Dumping "'.hsc($dbname).'" has failed. Could not open '.$filename);
-            return false;
-        }
-    }
-
-    /**
      * Registers a User Defined Function for use in SQL statements
      */
     public function create_function($function_name, $callback, $num_args) {
