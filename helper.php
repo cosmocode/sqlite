@@ -235,8 +235,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     /**
      * Returns a complete result set as array
      */
-    public function res2arr($res) {
-        return $this->adapter->res2arr($res);
+    public function res2arr($res, $assoc = true) {
+        return $this->adapter->res2arr($res, $assoc);
     }
 
     /**
