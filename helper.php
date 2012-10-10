@@ -99,7 +99,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     public function init($dbname, $updatedir) {
 
         $init = null; // set by initdb()
-        if(!$this->adapter->initdb($dbname, $init)) return false;
+        if(!$this->adapter OR !$this->adapter->initdb($dbname, $init)) return false;
 
         return $this->_updatedb($init, $updatedir);
     }
