@@ -7,11 +7,11 @@
  */
 
 // must be run within Dokuwiki
-if (!defined('DOKU_INC')) die();
+if(!defined('DOKU_INC')) die();
 
-if (!defined('DOKU_LF')) define('DOKU_LF', "\n");
-if (!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
-if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
+if(!defined('DOKU_LF')) define('DOKU_LF', "\n");
+if(!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
+if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC.'lib/plugins/');
 
 require_once(DOKU_PLUGIN.'admin.php');
 
@@ -21,8 +21,13 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
         return confToHash(dirname(__FILE__).'plugin.info.txt');
     }
 
-    function getMenuSort() { return 500; }
-    function forAdminOnly() { return true; }
+    function getMenuSort() {
+        return 500;
+    }
+
+    function forAdminOnly() {
+        return true;
+    }
 
     function handle() {
         global $conf;
@@ -218,31 +223,31 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
         }
     }
 
-    function getTOC(){
+    function getTOC() {
         global $conf;
         global $ID;
 
-        $toc = array();
-        $fileextensions = array('sqlite2'=>'.sqlite','sqlite3'=>'.sqlite3');
+        $toc            = array();
+        $fileextensions = array('sqlite2'=> '.sqlite', 'sqlite3'=> '.sqlite3');
 
-        foreach($fileextensions as $dbformat => $fileextension){
+        foreach($fileextensions as $dbformat => $fileextension) {
             $toc[] = array(
-                            'link'  => '',
-                            'title' => $dbformat.':',
-                            'level' => 1,
-                            'type'  => 'ul',
-                         );
+                'link'  => wl($ID, array('do'=> 'admin', 'page'=> 'sqlite')),
+                'title' => $dbformat.':',
+                'level' => 1,
+                'type'  => 'ul',
+            );
 
             $dbfiles = glob($conf['metadir'].'/*'.$fileextension);
 
-            if(is_array($dbfiles)) foreach($dbfiles as $file){
-                $db = basename($file,$fileextension);
+            if(is_array($dbfiles)) foreach($dbfiles as $file) {
+                $db    = basename($file, $fileextension);
                 $toc[] = array(
-                            'link'  => wl($ID,array('do'=>'admin','page'=>'sqlite','db'=>$db,'version'=>$dbformat,'sectok'=>getSecurityToken())),
-                            'title' => $this->getLang('db').' '.$db,
-                            'level' => 2,
-                            'type'  => 'ul',
-                         );
+                    'link'  => wl($ID, array('do'=> 'admin', 'page'=> 'sqlite', 'db'=> $db, 'version'=> $dbformat, 'sectok'=> getSecurityToken())),
+                    'title' => $this->getLang('db').' '.$db,
+                    'level' => 2,
+                    'type'  => 'ul',
+                );
             }
         }
 
