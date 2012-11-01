@@ -178,7 +178,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             $res = $this->query("$s;");
             if($res === false) {
                 if($this->adapter->getName() == DOKU_EXT_SQLITE) {
-                    sqlite_query($this->db, 'ROLLBACK TRANSACTION');
+                    $this->query('ROLLBACK TRANSACTION');
                 }
                 return false;
             }
