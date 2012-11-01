@@ -1,14 +1,16 @@
-sqlite Plugin for DokuWiki
+Sqlite Plugin for DokuWiki
 
 A helper plugin to easily access a SQLite database.
 
 The plugin detects whether PHPs PDO extension is available otherwise it 
-will look for the sqlite extension. PDO supports sqlite3, sqlite 
-supports sqlite2. It looks for databases with extension .sqlite3 
-respectively .sqlite . You should upgrade manual your database to 
-sqlite3 format.
+will look for the PHP sqlite extension.
+PDO supports sqlite3 only, and this plugin will look for db files with extension *.sqlite3
+The sqlite extension supports sqlite2 only, here this plugin will look for  *.sqlite .
+The admin interface shows a convert button when your database has the sqlite2 format
+and your installation has the both sqlite extensions else you should upgrade manually
+your database to sqlite3 format.
 
-Update can by using commandline tools. Database files are in data/meta directory.
+Manually upgrade can by using commandline tools. Database files are in data/meta directory.
     sqlite databasename.sqlite .dump | sqlite3 databasename.sqlite3
 More about this upgrade on http://www.sqlite.org/version3.html
 
