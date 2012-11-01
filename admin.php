@@ -42,6 +42,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                     wl($ID,array('do'     => 'admin',
                                  'page'   => 'sqlite',
                                  'db'     => $_REQUEST['db'],
+                                 'version'=> $_REQUEST['version'],
                                  'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'table\' ORDER BY name',
                                  'sectok' => getSecurityToken())).
                  '">'.$this->getLang('table').'</a></div></li>';
@@ -49,6 +50,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                     wl($ID,array('do'     => 'admin',
                                  'page'   => 'sqlite',
                                  'db'     => $_REQUEST['db'],
+                                 'version'=> $_REQUEST['version'],
                                  'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'index\' ORDER BY name',
                                  'sectok' => getSecurityToken())).
                  '">'.$this->getLang('index').'</a></div></li>';
@@ -60,6 +62,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
             $form->addHidden('do','admin');
             $form->addHidden('page','sqlite');
             $form->addHidden('db',$_REQUEST['db']);
+            $form->addHidden('version', $_REQUEST['version']);
             $form->addElement('<textarea name="sql" class="edit">'.hsc($_REQUEST['sql']).'</textarea>');
             $form->addElement('<input type="submit" class="button" />');
             $form->endFieldset();
@@ -68,6 +71,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
 
             if($_REQUEST['sql']){
 
+                /** @var $DBI helper_plugin_sqlite */
                 $DBI =& plugin_load('helper', 'sqlite');
                 if(!$DBI->init($_REQUEST['db'],'')) return;
 
@@ -76,12 +80,20 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                     $s = preg_replace('!^\s*--.*$!m', '', $s);
                     $s = trim($s);
                     if(!$s) continue;
+                    
+                    $time_start = microtime(true);
+                    
                     $res = $DBI->query("$s;");
                     if ($res === false) continue;
 
-                    msg($DBI->res2count($res).' affected rows',1);
                     $result = $DBI->res2arr($res);
-                    if(!count($result)) continue;
+
+                    $time_end = microtime(true);
+                    $time = $time_end - $time_start;
+                    
+                    $cnt = $DBI->res2count($res);
+                    msg($cnt.' affected rows in '.($time<0.0001 ? substr($time,0,5).substr($time,-3) : substr($time,0,7)).' seconds',1);
+                    if(!$cnt) continue;
 
                     echo '<p>';
                     $ths = array_keys($result[0]);
@@ -129,7 +141,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
             if(is_array($dbfiles)) foreach($dbfiles as $file){
                 $db = basename($file,$fileextension);
                 $toc[] = array(
-                            'link'  => wl($ID,array('do'=>'admin','page'=>'sqlite','db'=>$db,'sectok'=>getSecurityToken())),
+                            'link'  => wl($ID,array('do'=>'admin','page'=>'sqlite','db'=>$db,'version'=>$dbformat,'sectok'=>getSecurityToken())),
                             'title' => $this->getLang('db').' '.$db,
                             'level' => 2,
                             'type'  => 'ul',
