@@ -165,27 +165,55 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     private function _runupdatefile($file, $version) {
         $sql = io_readFile($file, false);
 
-        $sql = explode(";", $sql);
+        $sql = $this->SQLstring2array($sql);
         array_unshift($sql, 'BEGIN TRANSACTION');
         array_push($sql, "INSERT OR REPLACE INTO opts (val,opt) VALUES ($version,'dbversion')");
         array_push($sql, "COMMIT TRANSACTION");
 
+        if(!$this->doTransaction($sql)) {
+            return false;
+        }
+        return ($version == $this->_currentDBversion());
+    }
+
+    /**
+     * Split sql queries on semicolons, unless when semicolons are quoted
+     *
+     * @param string $sql
+     * @return array sql queries
+     */
+    public function SQLstring2array($sql) {
+        return preg_split("/;(?=([^']*'[^']*')*[^']*$)/", $sql);
+    }
+
+    /**
+     * @param array $sql queries without terminating semicolon
+     * @param bool  $sqlpreparing
+     * @return bool
+     */
+    public function doTransaction($sql, $sqlpreparing = true) {
         foreach($sql as $s) {
             $s = preg_replace('!^\s*--.*$!m', '', $s);
             $s = trim($s);
             if(!$s) continue;
 
-            $res = $this->query("$s;");
+            if($sqlpreparing) {
+                $res = $this->query("$s;");
+            } else {
+                $res = $this->adapter->executeQuery("$s;");
+            }
             if($res === false) {
+                //TODO check rollback for sqlite PDO
                 if($this->adapter->getName() == DOKU_EXT_SQLITE) {
                     $this->query('ROLLBACK TRANSACTION');
                 }
                 return false;
             }
         }
-
-        return ($version == $this->_currentDBversion());
+        return true;
     }
+    
+    
 
     /**
      * Registers a User Defined Function for use in SQL statements
