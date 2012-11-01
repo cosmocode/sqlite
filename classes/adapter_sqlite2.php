@@ -56,31 +56,12 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
     }
 
     /**
-     * Execute a query with the given parameters.
+     * Execute a query.
      *
-     * Takes care of escaping
-     *
-     * @param array $args
-     * @internal param string $sql - the statement
-     * @internal param $arguments ...
+     * @param string $sql query
      * @return bool|\SQLiteResult
      */
-    public function query($args) {
-        if(!$this->db) return false;
-
-        //reset previous result
-        $this->data = array();
-
-        $sql = $this->prepareSql($args);
-        if(!$sql) return false;
-
-        // intercept ALTER TABLE statements
-        $match = null;
-        if(preg_match('/^ALTER\s+TABLE\s+([\w\.]+)\s+(.*)/i', $sql, $match)) {
-            return $this->_altertable($match[1], $match[2]);
-        }
-
-        // execute query
+    public function executeQuery($sql) {
         $err = '';
         $res = @sqlite_query($this->db, $sql, SQLITE_ASSOC, $err);
         if($err) {

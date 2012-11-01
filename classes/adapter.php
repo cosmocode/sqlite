@@ -9,6 +9,7 @@ abstract class helper_plugin_sqlite_adapter {
     protected $fileextension;
     protected $dbfile;
     protected $db = null;
+    protected $data = array();
 
     /**
      * return name of adapter
@@ -86,12 +87,38 @@ abstract class helper_plugin_sqlite_adapter {
      *
      * Takes care of escaping
      *
-     * @param array $args...
+     * @param string $args
      * @internal param string $sql - the statement
      * @internal param $arguments ...
-     * @return bool
+     * @return bool|\PDOStatement|\SQLiteResult
      */
-    public abstract function query($args);
+    public function query($args) {
+        if(!$this->db) return false;
+
+        //reset previous result
+        $this->data = array();
+
+        $sql = $this->prepareSql($args);
+        if(!$sql) return false;
+
+        // intercept ALTER TABLE statements
+        $match = null;
+        if(preg_match('/^ALTER\s+TABLE\s+([\w\.]+)\s+(.*)/i', $sql, $match)) {
+            return $this->_altertable($match[1], $match[2]);
+        }
+
+        // execute query
+        return $this->executeQuery($sql);
+    }
+
+    /**
+     * Execute a query with the given parameters.
+     *
+     * Takes care of escaping
+     *
+     * @param $sql..
+     */
+    public abstract function executeQuery($sql);
 
     /**
      * Prepare a query with the given arguments.
