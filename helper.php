@@ -212,8 +212,131 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
         return true;
     }
-    
-    
+
+    /**
+     * Dump db into a file in meta directory
+     *
+     */
+    public function dumpDatabase($dbname, $from = DOKU_EXT_SQLITE) {
+        global $conf;
+        $adapterDumpDb = null;
+        //connect to desired database
+        if($this->adapter->getName() == $from) {
+            $adapterDumpDb =& $this->adapter;
+        } else {
+            if($from == DOKU_EXT_SQLITE) {
+                //TODO test connecting to sqlite2 database
+                if($this->existsSqlite2()) {
+                    require_once(DOKU_PLUGIN.'sqlite/classes/adapter_sqlite2.php');
+                    $adapterDumpDb = new helper_plugin_sqlite_adapter_sqlite2();
+                } else {
+                    msg('PHP Sqlite Extension(needed for sqlite2) not available, database "'.hsc($dbname).'" is not dumped to file.');
+                    return false;
+                }
+            }
+        }
+        if($adapterDumpDb === null) {
+            msg('No adapter loaded');
+            return false;
+        }
+        $init = false;
+        if(!$adapterDumpDb->initdb($dbname, $init)) {
+            msg('Opening database fails.', -1);
+            return false;
+        }
+
+        $res    = $adapterDumpDb->query(array("SELECT name,sql FROM sqlite_master WHERE type='table'"));
+        $tables = $adapterDumpDb->res2arr($res);
+
+        $filename = $conf['metadir'].'/dumpfile_'.$dbname.'.sql';
+        if($fp = fopen($filename, 'w')) {
+
+            fwrite($fp, 'BEGIN TRANSACTION;'."\n");
+
+            foreach($tables as $table) {
+
+                fwrite($fp, $table['sql'].";\n");
+
+                $sql = "SELECT * FROM ".$table['name'];
+                $res = $adapterDumpDb->query(array($sql));
+
+                while($row = $adapterDumpDb->res_fetch_array($res)) {
+
+                    $line = 'INSERT INTO '.$table['name'].' VALUES(';
+                    foreach($row as $no_entry => $entry) {
+                        if($no_entry !== 0) {
+                            $line .= ',';
+                        }
+
+                        if(is_null($entry)) {
+                            $line .= 'NULL';
+                        } elseif(!is_numeric($entry)) {
+                            $line .= $adapterDumpDb->quote_string($entry);
+                        } else {
+                            //TODO depending on locale extra leading zeros are truncated e.g 1.300 (thousand three hunderd)-> 1.3
+                            $line .= $entry;
+                        }
+                    }
+                    $line .= ');'."\n";
+
+                    fwrite($fp, $line);
+                }
+            }
+
+            $res     = $adapterDumpDb->query(array("SELECT name,sql FROM sqlite_master WHERE type='index'"));
+            $indexes = $adapterDumpDb->res2arr($res);
+            foreach($indexes as $index) {
+                fwrite($fp, $index['sql'].";\n");
+            }
+
+            fwrite($fp, 'COMMIT;'."\n");
+
+            fclose($fp);
+            return $filename;
+        } else {
+            msg('Dumping "'.hsc($dbname).'" has failed. Could not open '.$filename);
+            return false;
+        }
+    }
+
+    /**
+     * Read $dumpfile and try to add it to database.
+     * A existing database is backuped first as e.g. dbname.copy2.sqlite3
+     *
+     * @param string $dbname
+     * @param string $dumpfile
+     * @return bool true on succes
+     */
+    public function fillDatabaseFromDump($dbname, $dumpfile) {
+        global $conf;
+        //backup existing stuff
+        $dbf    = $conf['metadir'].'/'.$dbname;
+        $dbext  = $this->adapter->getFileextension();
+        $dbfile = $dbf.$dbext;
+        if(@file_exists($dbfile)) {
+
+            $i            = 0;
+            $backupdbfile = $dbfile;
+            do {
+                $i++;
+                $backupdbfile = $dbf.".copy$i".$dbext;
+            } while(@file_exists($backupdbfile));
+
+            io_rename($dbfile, $backupdbfile);
+        }
+
+        $init = false;
+        if(!$this->adapter->initdb($dbname, $init, $sqliteupgrade = true)) {
+            msg('Initialize db fails');
+            return false;
+        }
+
+        $sql = io_readFile($dumpfile, false);
+        $sql = $this->SQLstring2array($sql);
+
+        //skip preparing, because it interprets question marks as placeholders.
+        return $this->doTransaction($sql, $sqlpreparing = false);
+    }
 
     /**
      * Registers a User Defined Function for use in SQL statements

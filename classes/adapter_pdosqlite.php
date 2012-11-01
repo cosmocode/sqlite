@@ -28,19 +28,23 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
     /**
      * open db
      */
-    public function opendb($init) {
+    public function opendb($init, $sqliteupgrade = false) {
         if($init) {
             $oldDbfile = substr($this->dbfile, 0, -1);
 
             if(@file_exists($oldDbfile)) {
-                $notfound_msg = "SQLite: '".$this->dbname.$this->fileextension."' database not found. In the meta directory is '".$this->dbname.substr($this->fileextension, 0, -1)."' available. ";
 
+                $notfound_msg = "SQLite: '".$this->dbname.$this->fileextension."' database not found. In the meta directory is '".$this->dbname.substr($this->fileextension, 0, -1)."' available. ";
+                global $ID;
                 if($this->isSqlite3db($oldDbfile)) {
-                    msg($notfound_msg."PDO sqlite needs you rename manual the file extension to '.sqlite3' .", -1);
+                    msg($notfound_msg."PDO sqlite needs a rename of the file extension to '.sqlite3'. For admins more info via Admin > <a href=\"".wl($ID, array('do'=> 'admin', 'page'=> 'sqlite'))."\">Sqlite Interface</a>.", -1);
                     return false;
                 } else {
-                    msg($notfound_msg."PDO sqlite needs you upgrade manual this sqlite2 db to sqlite3 format.", -1);
-                    return false;
+                    //don't block connecting db, when upgrading
+                    if(!$sqliteupgrade) {
+                        msg($notfound_msg."PDO sqlite needs a upgrade of this sqlite2 db to sqlite3 format. For admins more info via Admin > <a href=\"".wl($ID, array('do'=> 'admin', 'page'=> 'sqlite'))."\">Sqlite Interface</a>.", -1);
+                        return false;
+                    }
                 }
             }
         } else {
@@ -98,7 +102,7 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
         if(!$res) return array();
 
         if(!$this->data) {
-            $mode = $assoc ? PDO::FETCH_ASSOC : PDO::FETCH_NUM;
+            $mode       = $assoc ? PDO::FETCH_ASSOC : PDO::FETCH_NUM;
             $this->data = $res->fetchAll($mode);
         }
         return $this->data;

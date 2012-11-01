@@ -19,7 +19,7 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
     /**
      * open db
      */
-    public function opendb($init) {
+    public function opendb($init, $sqliteupgrade = false) {
         if($this->isSqlite3db($this->dbfile)) {
             msg("SQLite: failed to open SQLite '".$this->dbname."' database (DB has a sqlite3 format instead of sqlite2 format.)", -1);
             return false;

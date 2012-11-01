@@ -25,98 +25,195 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
     function forAdminOnly() { return true; }
 
     function handle() {
+        global $conf;
+        if(isset($_POST['sqlite_rename'])) {
+
+            $path = $conf['metadir'].'/'.$_REQUEST['db'];
+            if(io_rename($path.'.sqlite', $path.'.sqlite3')) {
+                msg('Renamed database file succesfull!', 1);
+                //set to new situation
+                $_REQUEST['version'] = 'sqlite3';
+
+            } else {
+                msg('Renaming database file fails!', -1);
+            }
+
+        } elseif(isset($_POST['sqlite_convert'])) {
+
+            /** @var $DBI helper_plugin_sqlite */
+            $DBI        =& plugin_load('helper', 'sqlite');
+            $time_start = microtime(true);
+
+            if($dumpfile = $DBI->dumpDatabase($_REQUEST['db'], DOKU_EXT_SQLITE)) {
+                msg('Database temporary dumped to file: '.hsc($dumpfile).'. Now loading in new database...', 1);
+
+                if(!$DBI->fillDatabaseFromDump($_REQUEST['db'], $dumpfile)) {
+                    msg('Conversion failed!', -1);
+                    return false;
+                }
+
+                //TODO delete dumpfile
+                //return @unlink($dumpfile);
+                //TODO delete old sqlite2-db
+                // return @unlink($conf['metadir'].'/'.$_REQUEST['db'].'.sqlite');
+
+                msg('Conversion succeed!', 1);
+                //set to new situation
+                $_REQUEST['version'] = 'sqlite3';
+            }
+            $time_end = microtime(true);
+            $time     = $time_end - $time_start;
+            msg('Database "'.hsc($_REQUEST['db']).'" converted from sqlite 2 to 3 in '.$time.' seconds.', 0);
+
+        }
     }
 
     function html() {
         global $ID;
+        global $conf;
 
         echo $this->locale_xhtml('intro');
 
-        if($_REQUEST['db'] && checkSecurityToken()){
+        if(isset($_REQUEST['db']) && checkSecurityToken()) {
 
-            echo '<h2>'.$this->getLang('db').' '.hsc($_REQUEST['db']).'</h2>';
+            echo '<h2>'.$this->getLang('db').' "'.hsc($_REQUEST['db']).'"</h2>';
             echo '<div class="level2">';
 
-            echo '<ul>';
-            echo '<li><div class="li"><a href="'.
-                    wl($ID,array('do'     => 'admin',
-                                 'page'   => 'sqlite',
-                                 'db'     => $_REQUEST['db'],
-                                 'version'=> $_REQUEST['version'],
-                                 'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'table\' ORDER BY name',
-                                 'sectok' => getSecurityToken())).
-                 '">'.$this->getLang('table').'</a></div></li>';
-            echo '<li><div class="li"><a href="'.
-                    wl($ID,array('do'     => 'admin',
-                                 'page'   => 'sqlite',
-                                 'db'     => $_REQUEST['db'],
-                                 'version'=> $_REQUEST['version'],
-                                 'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'index\' ORDER BY name',
-                                 'sectok' => getSecurityToken())).
-                 '">'.$this->getLang('index').'</a></div></li>';
-            echo '</ul>';
+            $sqlcommandform = true;
+            /** @var $DBI helper_plugin_sqlite */
+            $DBI =& plugin_load('helper', 'sqlite');
+            if($_REQUEST['version'] == 'sqlite2') {
+                if(helper_plugin_sqlite_adapter::isSqlite3db($conf['metadir'].'/'.$_REQUEST['db'].'.sqlite')) {
 
-            $form = new Doku_Form(array('class'=>'sqliteplugin'));
-            $form->startFieldset('SQL Command');
-            $form->addHidden('id',$ID);
-            $form->addHidden('do','admin');
-            $form->addHidden('page','sqlite');
-            $form->addHidden('db',$_REQUEST['db']);
-            $form->addHidden('version', $_REQUEST['version']);
-            $form->addElement('<textarea name="sql" class="edit">'.hsc($_REQUEST['sql']).'</textarea>');
-            $form->addElement('<input type="submit" class="button" />');
-            $form->endFieldset();
-            $form->printForm();
+                    msg('This is a database in sqlite3 format.', 2);
+                    msg(
+                        'This plugin needs your database file has the extension ".sqlite3"
+                        instead of ".sqlite" before it will be recognized as sqlite3 database.', 2
+                    );
+                    $form = new Doku_Form(array('method'=> 'post'));
+                    $form->addHidden('page', 'sqlite');
+                    $form->addHidden('sqlite_rename', 'go');
+                    $form->addHidden('db', $_REQUEST['db']);
+                    $form->addElement(form_makeButton('submit', 'admin', sprintf($this->getLang('rename2to3'), hsc($_REQUEST['db']))));
+                    $form->printForm();
 
+                    if($DBI->existsPDOSqlite()) $sqlcommandform = false;
 
-            if($_REQUEST['sql']){
+                } else {
+                    if($DBI->existsPDOSqlite()) {
+                        $sqlcommandform = false;
+                        msg('This is a database in sqlite2 format.', 2);
 
-                /** @var $DBI helper_plugin_sqlite */
-                $DBI =& plugin_load('helper', 'sqlite');
-                if(!$DBI->init($_REQUEST['db'],'')) return;
-
-                $sql = explode(";",$_REQUEST['sql']);
-                foreach($sql as $s){
-                    $s = preg_replace('!^\s*--.*$!m', '', $s);
-                    $s = trim($s);
-                    if(!$s) continue;
-                    
-                    $time_start = microtime(true);
-                    
-                    $res = $DBI->query("$s;");
-                    if ($res === false) continue;
-
-                    $result = $DBI->res2arr($res);
-
-                    $time_end = microtime(true);
-                    $time = $time_end - $time_start;
-                    
-                    $cnt = $DBI->res2count($res);
-                    msg($cnt.' affected rows in '.($time<0.0001 ? substr($time,0,5).substr($time,-3) : substr($time,0,7)).' seconds',1);
-                    if(!$cnt) continue;
-
-                    echo '<p>';
-                    $ths = array_keys($result[0]);
-                    echo '<table class="inline">';
-                    echo '<tr>';
-                    foreach($ths as $th){
-                        echo '<th>'.hsc($th).'</th>';
+                        if($DBI->existsSqlite2()) {
+                            $form = new Doku_Form(array('method'=> 'post'));
+                            $form->addHidden('page', 'sqlite');
+                            $form->addHidden('sqlite_convert', 'go');
+                            $form->addHidden('db', $_REQUEST['db']);
+                            $form->addElement(form_makeButton('submit', 'admin', sprintf($this->getLang('convert2to3'), hsc($_REQUEST['db']))));
+                            $form->printForm();
+                        } else {
+                            msg(
+                                'Before PDO sqlite can handle this format, it needs a conversion to the sqlite3 format.
+                                Because PHP sqlite extension is not available,
+                                you should manually convert "'.hsc($_REQUEST['db']).'.sqlite" in the meta directory to "'.hsc($_REQUEST['db']).'.sqlite3".<br />
+                                See for info about the conversion '.$this->external_link('http://www.sqlite.org/version3.html').'.', -1
+                            );
+                        }
                     }
-                    echo '</tr>';
-                    foreach($result as $row){
+                }
+            } else {
+                if(!$DBI->existsPDOSqlite()) {
+                    $sqlcommandform = false;
+                    msg('A database in sqlite3 format needs the PHP PDO sqlite plugin.', -1);
+                }
+            }
+
+            if($sqlcommandform) {
+                echo '<ul>';
+                echo '<li><div class="li"><a href="'.
+                    wl(
+                        $ID, array(
+                                  'do'     => 'admin',
+                                  'page'   => 'sqlite',
+                                  'db'     => $_REQUEST['db'],
+                                  'version'=> $_REQUEST['version'],
+                                  'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'table\' ORDER BY name',
+                                  'sectok' => getSecurityToken()
+                             )
+                    ).
+                    '">'.$this->getLang('table').'</a></div></li>';
+                echo '<li><div class="li"><a href="'.
+                    wl(
+                        $ID, array(
+                                  'do'     => 'admin',
+                                  'page'   => 'sqlite',
+                                  'db'     => $_REQUEST['db'],
+                                  'version'=> $_REQUEST['version'],
+                                  'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'index\' ORDER BY name',
+                                  'sectok' => getSecurityToken()
+                             )
+                    ).
+                    '">'.$this->getLang('index').'</a></div></li>';
+                echo '</ul>';
+
+                $form = new Doku_Form(array('class'=> 'sqliteplugin'));
+                $form->startFieldset('SQL Command');
+                $form->addHidden('id', $ID);
+                $form->addHidden('do', 'admin');
+                $form->addHidden('page', 'sqlite');
+                $form->addHidden('db', $_REQUEST['db']);
+                $form->addHidden('version', $_REQUEST['version']);
+                $form->addElement('<textarea name="sql" class="edit">'.hsc($_REQUEST['sql']).'</textarea>');
+                $form->addElement('<input type="submit" class="button" />');
+                $form->endFieldset();
+                $form->printForm();
+
+                if($_REQUEST['sql']) {
+
+                    if(!$DBI->init($_REQUEST['db'], '')) return;
+
+                    $sql = $DBI->SQLstring2array($_REQUEST['sql']);
+                    foreach($sql as $s) {
+                        $s = preg_replace('!^\s*--.*$!m', '', $s);
+                        $s = trim($s);
+                        if(!$s) continue;
+
+                        $time_start = microtime(true);
+
+                        $res = $DBI->query("$s;");
+                        if($res === false) continue;
+
+                        $result = $DBI->res2arr($res);
+
+                        $time_end = microtime(true);
+                        $time     = $time_end - $time_start;
+
+                        $cnt = $DBI->res2count($res);
+                        msg($cnt.' affected rows in '.($time < 0.0001 ? substr($time, 0, 5).substr($time, -3) : substr($time, 0, 7)).' seconds', 1);
+                        if(!$cnt) continue;
+
+                        echo '<p>';
+                        $ths = array_keys($result[0]);
+                        echo '<table class="inline">';
                         echo '<tr>';
-                        $tds = array_values($row);
-                        foreach($tds as $td){
-                            echo '<td>'.hsc($td).'</td>';
+                        foreach($ths as $th) {
+                            echo '<th>'.hsc($th).'</th>';
                         }
                         echo '</tr>';
+                        foreach($result as $row) {
+                            echo '<tr>';
+                            $tds = array_values($row);
+                            foreach($tds as $td) {
+                                echo '<td>'.hsc($td).'</td>';
+                            }
+                            echo '</tr>';
+                        }
+                        echo '</table>';
+                        echo '</p>';
                     }
-                    echo '</table>';
-                    echo '</p>';
                 }
 
             }
-
             echo '</div>';
         }
     }

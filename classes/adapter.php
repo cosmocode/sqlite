@@ -18,6 +18,10 @@ abstract class helper_plugin_sqlite_adapter {
      */
     public abstract function getName();
 
+    public function getFileextension() {
+        return $this->fileextension;
+    }
+
     /**
      * @return string database name when set, otherwise an empty string
      */
@@ -36,9 +40,10 @@ abstract class helper_plugin_sqlite_adapter {
      *
      * @param string $dbname    - name of database
      * @param bool   $init      - true if this is a new database to initialize
+     * @param bool   $sqliteupgrade
      * @return bool
      */
-    public function initdb($dbname, &$init) {
+    public function initdb($dbname, &$init, $sqliteupgrade = false) {
         global $conf;
 
         // check for already open DB
@@ -58,8 +63,7 @@ abstract class helper_plugin_sqlite_adapter {
         $this->dbfile = $conf['metadir'].'/'.$dbname.$this->fileextension;
 
         $init = (!@file_exists($this->dbfile) || ((int) @filesize($this->dbfile)) < 3);
-
-        return $this->opendb($init);
+        return $this->opendb($init, $sqliteupgrade);
     }
 
     /**
