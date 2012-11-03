@@ -25,6 +25,10 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         return confToHash(dirname(__FILE__).'plugin.info.txt');
     }
 
+    public function getAdapter() {
+        return $this->adapter;
+    }
+
     /**
      * Keep separate instances for every call to keep database connections
      */
