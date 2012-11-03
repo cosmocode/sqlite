@@ -403,7 +403,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     }
 
     /**
-     * Return the first value from the first row.
+     * Return the first value from the next row.
      */
     public function res2single($res) {
         return $this->adapter->res2single($res);
@@ -435,8 +435,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     /**
      * Count the number of records changed last time
      */
-    public function countChanges($db, $res) {
-        return $this->adapter->countChanges($db, $res);
+    public function countChanges($res) {
+        return $this->adapter->countChanges($res);
     }
 
 }

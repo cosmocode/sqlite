@@ -152,10 +152,18 @@ abstract class helper_plugin_sqlite_adapter {
         }
 
         // check number of arguments
-        if($argc < substr_count($sql, '?')) {
+        $qmc = substr_count($sql, '?');
+        if($argc < $qmc) {
             msg(
                 'Not enough arguments passed for statement. '.
-                    'Expected '.substr_count($sql, '?').' got '.
+                    'Expected '.$qmc.' got '.
+                    $argc.' - '.hsc($sql), -1
+            );
+            return false;
+        }elseif($argc > $qmc){
+            msg(
+                'Too much arguments passed for statement. '.
+                    'Expected '.$qmc.' got '.
                     $argc.' - '.hsc($sql), -1
             );
             return false;
@@ -399,7 +407,7 @@ abstract class helper_plugin_sqlite_adapter {
     public abstract function res2row($res, $rownum = 0);
 
     /**
-     * Return the first value from the first row.
+     * Return the first value from the next row.
      */
     public abstract function res2single($res);
 
@@ -422,8 +430,10 @@ abstract class helper_plugin_sqlite_adapter {
 
     /**
      * Count the number of records changed last time
+     *
+     * Don't work after a SELECT statement in PDO
      */
-    public abstract function countChanges($db, $res);
+    public abstract function countChanges($res);
 
 }
 

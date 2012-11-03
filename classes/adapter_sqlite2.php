@@ -84,7 +84,9 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
     public function res2arr($res, $assoc = true) {
         $data = array();
 
+        if(!$res) return $data;
         if(!sqlite_num_rows($res)) return $data;
+
         sqlite_rewind($res);
         $mode = $assoc ? SQLITE_ASSOC : SQLITE_NUM;
         while(($row = sqlite_fetch_array($res, $mode)) !== false) {
@@ -105,9 +107,11 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
     }
 
     /**
-     * Return the first value from the first row.
+     * Return the first value from the next row.
      */
     public function res2single($res) {
+        if(!$res) return false;
+
         return sqlite_fetch_single($res);
     }
 
@@ -150,6 +154,8 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
      * fetch the next row as zero indexed array
      */
     public function res_fetch_array($res) {
+        if(!$res) return false;
+
         return sqlite_fetch_array($res, SQLITE_NUM);
     }
 
@@ -157,6 +163,8 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
      * fetch the next row as assocative array
      */
     public function res_fetch_assoc($res) {
+        if(!$res) return false;
+
         return sqlite_fetch_array($res, SQLITE_ASSOC);
     }
 
@@ -166,14 +174,18 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
      * This function is really inperformant in PDO and should be avoided!
      */
     public function res2count($res) {
+        if(!$res) return 0;
+
         return sqlite_num_rows($res);
     }
 
     /**
      * Count the number of records changed last time
+     *
+     * Don't work after a SELECT statement in PDO
      */
-    public function countChanges($db, $res) {
-        return sqlite_changes($db);
+    public function countChanges($res) {
+        return sqlite_changes($this->db);
     }
 }
 

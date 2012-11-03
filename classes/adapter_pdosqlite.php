@@ -119,7 +119,7 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
     }
 
     /**
-     * Return the first value from the first row.
+     * Return the first value from the next row.
      */
     public function res2single($res) {
         if(!$res) return false;
@@ -200,7 +200,7 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
      * This function is really inperformant in PDO and should be avoided!
      */
     public function res2count($res) {
-        if(!$res) return false;
+        if(!$res) return 0;
 
         if(!$this->data) {
             $this->data = $this->res2arr($res);
@@ -214,8 +214,8 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
      *
      * Don't work after a SELECT statement
      */
-    public function countChanges($db, $res) {
-        if(!$res) return false;
+    public function countChanges($res) {
+        if(!$res) return 0;
 
         return $res->rowCount();
     }
