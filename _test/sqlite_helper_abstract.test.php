@@ -184,8 +184,8 @@ EOF;
 
         $this->assertEquals(false, $SqliteHelper->res2row(false));
         $this->assertEquals($result0, $SqliteHelper->res2row($SqliteHelper->res));
-        $this->assertEquals($result2, $SqliteHelper->res2row($SqliteHelper->res, 2));
-        $this->assertEquals($result2, $SqliteHelper->res2row($SqliteHelper->res, 2)); //absolute result set number
+        $SqliteHelper->res2row($SqliteHelper->res); // skip one row
+        $this->assertEquals($result2, $SqliteHelper->res2row($SqliteHelper->res));
     }
 
     function test_res2single() {

@@ -109,13 +109,12 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
     }
 
     /**
-     * Return the wanted row from a given result set as
-     * associative array
+     * Return the next row of the given result set as associative array
      */
-    public function res2row($res, $rownum = 0) {
+    public function res2row($res) {
         if(!$res) return false;
 
-        return $res->fetch(PDO::FETCH_ASSOC, PDO::FETCH_ORI_ABS, $rownum);
+        return $res->fetch(PDO::FETCH_ASSOC);
     }
 
     /**

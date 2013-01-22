@@ -399,10 +399,9 @@ abstract class helper_plugin_sqlite_adapter {
     public abstract function res2arr($res, $assoc = true);
 
     /**
-     * Return the wanted row from a given result set as
-     * associative array
+     * Return the next row of the given result set as associative array
      */
-    public abstract function res2row($res, $rownum = 0);
+    public abstract function res2row($res);
 
     /**
      * Return the first value from the next row.
