@@ -42,7 +42,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     public function helper_plugin_sqlite() {
 
         if(!$this->adapter) {
-            if($this->existsPDOSqlite()) {
+            if($this->existsPDOSqlite() && empty($_ENV['SQLITE_SKIP_PDO'])) {
                 require_once(DOKU_PLUGIN.'sqlite/classes/adapter_pdosqlite.php');
                 $this->adapter = new helper_plugin_sqlite_adapter_pdosqlite();
             }
