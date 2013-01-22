@@ -70,7 +70,7 @@ class sqlite_helper_abstract_test extends DokuWikiTest {
 -- This is test data for the SQLstring2array function
 
 INSERT INTO foo SET bar = '
-some multi line string
+some multi''d line string
 -- not a comment
 ';
 
@@ -78,10 +78,6 @@ SELECT * FROM bar;
 SELECT * FROM bax;
 
 SELECT * FROM bar; SELECT * FROM bax;
-
-INSERT INTO foo SET bar = "
-some multi line string
--- not a comment
 ";
 EOF;
 
@@ -89,16 +85,13 @@ EOF;
 
         $this->assertEquals(6, count($statements), 'number of detected statements');
 
-        $this->assertContains('some multi line string', $statements[0]);
+        $this->assertContains('some multi\'\'d line string', $statements[0]);
         $this->assertContains('-- not a comment', $statements[0]);
 
         $this->assertEquals('SELECT * FROM bar', $statements[1]);
         $this->assertEquals('SELECT * FROM bax', $statements[2]);
         $this->assertEquals('SELECT * FROM bar', $statements[3]);
         $this->assertEquals('SELECT * FROM bax', $statements[4]);
-
-        $this->assertContains('some multi line string', $statements[5]);
-        $this->assertContains('-- not a comment', $statements[5]);
     }
 
     function test_prepareSql() {

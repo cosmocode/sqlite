@@ -209,15 +209,18 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
 
             // handle strings
             if($in_str){
-                if($char == '\\'){ // escape character, just jump on
-                    $statement .= $char . $next;
-                    $i++;
-                    continue;
-                }
-                if($char == $in_str){ // end of string
-                    $statement .= $char;
-                    $in_str = false;
-                    continue;
+                if($char == "'"){
+                    if($next == "'"){
+                        // current char is an escape for the next
+                        $statement .= $char . $next;
+                        $i++;
+                        continue;
+                    }else{
+                        // end of string
+                        $statement .= $char;
+                        $in_str = false;
+                        continue;
+                    }
                 }
                 // still in string
                 $statement .= $char;
@@ -231,8 +234,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             }
 
             // new string?
-            if($char == "'" || $char == '"'){
-                $in_str = $char;
+            if($char == "'"){
+                $in_str = true;
                 $statement .= $char;
                 continue;
             }
