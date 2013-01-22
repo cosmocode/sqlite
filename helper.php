@@ -187,7 +187,69 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      * @return array sql queries
      */
     public function SQLstring2array($sql) {
-        return preg_split("/;(?=([^']*'[^']*')*[^']*$)/", $sql);
+        $statements = array();
+        $len = strlen($sql);
+
+        // Simple state machine to "parse" sql into single statements
+        $in_str = false;
+        $in_com = false;
+        $statement = '';
+        for($i=0; $i<$len; $i++){
+            $prev = $i ? $sql{$i-1} : "\n";
+            $char = $sql{$i};
+            $next = $sql{$i+1};
+
+            // in comment? ignore everything until line end
+            if($in_com){
+                if($char == "\n"){
+                    $in_com = false;
+                }
+                continue;
+            }
+
+            // handle strings
+            if($in_str){
+                if($char == '\\'){ // escape character, just jump on
+                    $statement .= $char . $next;
+                    $i++;
+                    continue;
+                }
+                if($char == $in_str){ // end of string
+                    $statement .= $char;
+                    $in_str = false;
+                    continue;
+                }
+                // still in string
+                $statement .= $char;
+                continue;
+            }
+
+            // new comment?
+            if($char == '-' && $next == '-' && $prev == "\n"){
+                $in_com = true;
+                continue;
+            }
+
+            // new string?
+            if($char == "'" || $char == '"'){
+                $in_str = $char;
+                $statement .= $char;
+                continue;
+            }
+
+            // the real delimiter
+            if($char == ';'){
+                $statements[] = trim($statement);
+                $statement = '';
+                continue;
+            }
+
+            // some standard query stuff
+            $statement .= $char;
+        }
+        if($statement) $statements[] = trim($statement);
+
+        return $statements;
     }
 
     /**

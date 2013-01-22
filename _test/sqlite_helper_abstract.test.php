@@ -57,10 +57,48 @@ class sqlite_helper_abstract_test extends DokuWikiTest {
         $sqlarray1  = array("INSERT INTO data VALUES('text','text ;text')");
 
         $sqlstring2 = "INSERT INTO data VALUES('text','text ;text');INSERT INTO data VALUES('text','te''xt ;text');";
-        $sqlarray2  = array("INSERT INTO data VALUES('text','text ;text')", "INSERT INTO data VALUES('text','te''xt ;text')", "");
+        $sqlarray2  = array("INSERT INTO data VALUES('text','text ;text')", "INSERT INTO data VALUES('text','te''xt ;text')");
 
         $this->assertEquals($sqlarray1, $SqliteHelper->SQLstring2array($sqlstring1));
         $this->assertEquals($sqlarray2, $SqliteHelper->SQLstring2array($sqlstring2));
+    }
+
+    function test_SQLstring2array_complex(){
+        $SqliteHelper =& $this->getSqliteHelper();
+
+        $input = <<<EOF
+-- This is test data for the SQLstring2array function
+
+INSERT INTO foo SET bar = '
+some multi line string
+-- not a comment
+';
+
+SELECT * FROM bar;
+SELECT * FROM bax;
+
+SELECT * FROM bar; SELECT * FROM bax;
+
+INSERT INTO foo SET bar = "
+some multi line string
+-- not a comment
+";
+EOF;
+
+        $statements = $SqliteHelper->SQLstring2array($input);
+
+        $this->assertEquals(6, count($statements), 'number of detected statements');
+
+        $this->assertContains('some multi line string', $statements[0]);
+        $this->assertContains('-- not a comment', $statements[0]);
+
+        $this->assertEquals('SELECT * FROM bar', $statements[1]);
+        $this->assertEquals('SELECT * FROM bax', $statements[2]);
+        $this->assertEquals('SELECT * FROM bar', $statements[3]);
+        $this->assertEquals('SELECT * FROM bax', $statements[4]);
+
+        $this->assertContains('some multi line string', $statements[5]);
+        $this->assertContains('-- not a comment', $statements[5]);
     }
 
     function test_prepareSql() {
