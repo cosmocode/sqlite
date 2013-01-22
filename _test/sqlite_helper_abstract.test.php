@@ -233,7 +233,7 @@ EOF;
     function test_countChanges() {
         $SqliteHelper =& $this->getResultInsertquery();
 
-        $this->assertSame(0, $SqliteHelper->countChanges(false));
-        $this->assertEquals(1, $SqliteHelper->countChanges($SqliteHelper->res));
+        $this->assertSame(0, $SqliteHelper->countChanges(false), 'Empty result');
+        $this->assertEquals(1, $SqliteHelper->countChanges($SqliteHelper->res), 'Insert result');
     }
 }

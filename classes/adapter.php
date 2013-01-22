@@ -116,9 +116,7 @@ abstract class helper_plugin_sqlite_adapter {
     }
 
     /**
-     * Execute a query with the given parameters.
-     *
-     * Takes care of escaping
+     * Execute a raw query
      *
      * @param $sql..
      */
@@ -135,7 +133,7 @@ abstract class helper_plugin_sqlite_adapter {
      *      - arguments...
      * @return bool|string
      */
-    public  function prepareSql($args) {
+    public function prepareSql($args) {
 
         $sql = trim(array_shift($args));
         $sql = rtrim($sql, ';');

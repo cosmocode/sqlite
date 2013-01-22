@@ -185,6 +185,7 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
      * Don't work after a SELECT statement in PDO
      */
     public function countChanges($res) {
+        if(!$res) return 0;
         return sqlite_changes($this->db);
     }
 }
