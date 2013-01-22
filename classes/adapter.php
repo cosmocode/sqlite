@@ -141,7 +141,7 @@ abstract class helper_plugin_sqlite_adapter {
         $sql = rtrim($sql, ';');
 
         if(!$sql) {
-            msg('No SQL statement given', -1);
+            if(!defined('SIMPLE_TEST')) msg('No SQL statement given', -1);
             return false;
         }
 
@@ -154,14 +154,14 @@ abstract class helper_plugin_sqlite_adapter {
         // check number of arguments
         $qmc = substr_count($sql, '?');
         if($argc < $qmc) {
-            msg(
+            if(!defined('SIMPLE_TEST')) msg(
                 'Not enough arguments passed for statement. '.
                     'Expected '.$qmc.' got '.
                     $argc.' - '.hsc($sql), -1
             );
             return false;
         }elseif($argc > $qmc){
-            msg(
+            if(!defined('SIMPLE_TEST')) msg(
                 'Too much arguments passed for statement. '.
                     'Expected '.$qmc.' got '.
                     $argc.' - '.hsc($sql), -1
