@@ -9,10 +9,6 @@
 // must be run within Dokuwiki
 if(!defined('DOKU_INC')) die();
 
-if(!defined('DOKU_LF')) define('DOKU_LF', "\n");
-if(!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
-if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC.'lib/plugins/');
-
 if(!defined('DOKU_EXT_SQLITE')) define('DOKU_EXT_SQLITE', 'sqlite');
 if(!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
 
@@ -20,10 +16,6 @@ require_once(DOKU_PLUGIN.'sqlite/classes/adapter.php');
 
 class helper_plugin_sqlite extends DokuWiki_Plugin {
     var $adapter = null;
-
-    public function getInfo() {
-        return confToHash(dirname(__FILE__).'plugin.info.txt');
-    }
 
     public function getAdapter() {
         return $this->adapter;
