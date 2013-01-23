@@ -2,6 +2,8 @@
 
 /**
  * Test the abstract functions in the helper to check backend unity and some other functions
+ *
+ * @group plugin_sqlite
  */
 class sqlite_helper_abstract_test extends DokuWikiTest {
     function setup() {
