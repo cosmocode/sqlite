@@ -449,6 +449,19 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     }
 
     /**
+     * Closes the result set (and it's cursors)
+     *
+     * If you're doing SELECT queries inside a TRANSACTION, be sure to call this
+     * function on all your results sets, before COMMITing the transaction.
+     *
+     * @param $res
+     * @return bool
+     */
+    public function res_close($res){
+        return $this->adapter->res_close($res);
+    }
+
+    /**
      * Returns a complete result set as array
      */
     public function res2arr($res, $assoc = true) {

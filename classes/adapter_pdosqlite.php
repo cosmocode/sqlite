@@ -89,11 +89,21 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
 
         if(!$res) {
             $err = $this->db->errorInfo();
-            msg($err[2].':<br /><pre>'.hsc($sql).'</pre>', -1);
+            msg($err[0].' '.$err[1].' '.$err[2].':<br /><pre>'.hsc($sql).'</pre>', -1);
             return false;
         }
 
         return $res;
+    }
+
+    /**
+     * Close the result set and it's cursors
+     *
+     * @param PDOStatement $res
+     * @return bool
+     */
+    public function res_close($res) {
+        return $res->closeCursor();
     }
 
     /**

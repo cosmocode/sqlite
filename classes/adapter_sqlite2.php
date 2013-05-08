@@ -79,6 +79,16 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
     }
 
     /**
+     * Close the result set and it's cursors
+     *
+     * @param $res
+     * @return bool
+     */
+    public function res_close($res) {
+        return true; //seems not to be needed in sqlite2?
+    }
+
+    /**
      * Returns a complete result set as array
      */
     public function res2arr($res, $assoc = true) {

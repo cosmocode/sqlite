@@ -61,7 +61,17 @@ class helper_plugin_sqlite_adapter_null extends helper_plugin_sqlite_adapter {
          return $str;
      }
 
-     /**
+    /**
+     * Close the result set and it's cursors
+     *
+     * @param $res
+     * @return bool
+     */
+    public function res_close($res) {
+        return true;
+    }
+
+    /**
       * Returns a complete result set as array
       */
      public function res2arr($res, $assoc = true) {

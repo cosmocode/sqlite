@@ -394,6 +394,13 @@ abstract class helper_plugin_sqlite_adapter {
     public abstract function escape_string($str);
 
     /**
+     * Close the result set and it's cursors
+     *
+     * @param $res
+     */
+    public abstract function res_close($res);
+
+    /**
      * Returns a complete result set as array
      */
     public abstract function res2arr($res, $assoc = true);
