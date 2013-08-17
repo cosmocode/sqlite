@@ -1,0 +1,3 @@
+====== SQLite  ======
+
+Auf dieser Siete könne Sie direkt auf bereits existierende SQLite Dantenbanken zugreifen. Dazu müssen Sie nur die Datenbank aus dem Inhaltsverzeichnis auswählen und Sie könne sofort Ihre SQL Befehle für die Datenbank eingeben.
