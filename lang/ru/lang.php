@@ -11,4 +11,4 @@ $lang['db']                    = 'База данных';
 $lang['index']                 = 'list indexes';
 $lang['table']                 = 'list tables';
 $lang['rename2to3']            = 'Переименовать %s.sqlite в *.sqlite3';
-$lang['convert2to3']           = 'Конвертировать %s из форумата Sqlite2 в Sqlite3';
+$lang['convert2to3']           = 'Конвертировать %s из формата Sqlite2 в Sqlite3';
