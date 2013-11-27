@@ -84,8 +84,9 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
      * @return bool|PDOStatement
      */
     public function executeQuery($sql) {
-        $this->data = null;
         $res = $this->db->query($sql);
+
+        $this->data = null;
 
         if(!$res) {
             $err = $this->db->errorInfo();
