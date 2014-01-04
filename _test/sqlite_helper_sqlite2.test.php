@@ -1,11 +1,11 @@
 <?php
-
 require_once dirname(__FILE__).'/sqlite_helper_abstract.test.php';
 
 /**
  * Tests all the same things as the abstract test but skips the PDO driver
  *
  * @group plugin_sqlite
+ * @group plugins
  */
 class sqlite_helper_sqlite2_test extends sqlite_helper_abstract_test {
 

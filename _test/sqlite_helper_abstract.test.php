@@ -1,9 +1,9 @@
 <?php
-
 /**
  * Test the abstract functions in the helper to check backend unity and some other functions
  *
  * @group plugin_sqlite
+ * @group plugins
  */
 class sqlite_helper_abstract_test extends DokuWikiTest {
     function setup() {
@@ -18,7 +18,7 @@ class sqlite_helper_abstract_test extends DokuWikiTest {
      */
     function getSqliteHelper() {
         /** @var $SqliteHelper helper_plugin_sqlite */
-        $SqliteHelper =& plugin_load('helper', 'sqlite');
+        $SqliteHelper = plugin_load('helper', 'sqlite');
         if(!$SqliteHelper->init("testdb", DOKU_PLUGIN."sqlite/_test/db")) {
             throw new Exception('Initializing Sqlite Helper fails!');
         }
@@ -30,7 +30,7 @@ class sqlite_helper_abstract_test extends DokuWikiTest {
      */
     function getResultSelectquery() {
         /** @var $SqliteHelper helper_plugin_sqlite */
-        $SqliteHelper =& $this->getSqliteHelper();
+        $SqliteHelper = $this->getSqliteHelper();
 
         $sql               = "SELECT * FROM testdata WHERE keyword='music'";
         $res               = $SqliteHelper->query($sql);
@@ -43,7 +43,7 @@ class sqlite_helper_abstract_test extends DokuWikiTest {
      */
     function getResultInsertquery() {
         /** @var $SqliteHelper helper_plugin_sqlite */
-        $SqliteHelper =& $this->getSqliteHelper();
+        $SqliteHelper = $this->getSqliteHelper();
 
         $sql               = "INSERT INTO testdata VALUES(20,'glass','Purple')";
         $res               = $SqliteHelper->query($sql);
@@ -53,7 +53,7 @@ class sqlite_helper_abstract_test extends DokuWikiTest {
 
     function test_SQLstring2array() {
         /** @var $SqliteHelper helper_plugin_sqlite */
-        $SqliteHelper =& $this->getSqliteHelper();
+        $SqliteHelper = $this->getSqliteHelper();
 
         $sqlstring1 = "INSERT INTO data VALUES('text','text ;text')";
         $sqlarray1  = array("INSERT INTO data VALUES('text','text ;text')");
@@ -66,7 +66,7 @@ class sqlite_helper_abstract_test extends DokuWikiTest {
     }
 
     function test_SQLstring2array_complex(){
-        $SqliteHelper =& $this->getSqliteHelper();
+        $SqliteHelper = $this->getSqliteHelper();
 
         $input = <<<EOF
 -- This is test data for the SQLstring2array function
@@ -98,7 +98,7 @@ EOF;
 
     function test_prepareSql() {
         /** @var $SqliteHelper helper_plugin_sqlite */
-        $SqliteHelper =& $this->getSqliteHelper();
+        $SqliteHelper = $this->getSqliteHelper();
 
         $sql1 = "SELECT * FROM cheese WHERE NOT 'ho''les' OR 'mouse'";
         $sql2 = "SELECT * FROM cheese WHERE NOT ? OR ?";
@@ -118,7 +118,7 @@ EOF;
 
     function test_quote_and_join() {
         /** @var $SqliteHelper helper_plugin_sqlite */
-        $SqliteHelper =& $this->getSqliteHelper();
+        $SqliteHelper = $this->getSqliteHelper();
 
         $string       = "Co'mpl''ex \"st'\"ring";
         $vals         = array($string, $string);
@@ -128,7 +128,7 @@ EOF;
 
     function test_quote_string() {
         /** @var $SqliteHelper helper_plugin_sqlite */
-        $SqliteHelper =& $this->getSqliteHelper();
+        $SqliteHelper = $this->getSqliteHelper();
 
         $string       = "Co'mpl''ex \"st'\"ring";
         $quotedstring = "'Co''mpl''''ex \"st''\"ring'";
@@ -137,7 +137,7 @@ EOF;
 
     function test_escape_string() {
         /** @var $SqliteHelper helper_plugin_sqlite */
-        $SqliteHelper =& $this->getSqliteHelper();
+        $SqliteHelper = $this->getSqliteHelper();
 
         $string       = "Co'mpl''ex \"st'\"ring";
         $quotedstring = "Co''mpl''''ex \"st''\"ring";
@@ -145,12 +145,12 @@ EOF;
     }
 
     function test_query_select() {
-        $SqliteHelper =& $this->getResultSelectquery();
+        $SqliteHelper = $this->getResultSelectquery();
         $this->assertNotEquals(false, $SqliteHelper->res);
     }
 
     function test_res2arr_assoc() {
-        $SqliteHelper =& $this->getResultSelectquery();
+        $SqliteHelper = $this->getResultSelectquery();
 
         $resultassoc = Array(
             0 => Array('tid' => 3, 'keyword' => 'music', 'value' => 'happy'),
@@ -165,7 +165,7 @@ EOF;
     }
 
     function test_res2arr_num() {
-        $SqliteHelper =& $this->getResultSelectquery();
+        $SqliteHelper = $this->getResultSelectquery();
 
         $resultnum = Array(
             0 => Array(0 => 3, 1 => 'music', 2 => 'happy'),
@@ -179,7 +179,7 @@ EOF;
     }
 
     function test_res2row() {
-        $SqliteHelper =& $this->getResultSelectquery();
+        $SqliteHelper = $this->getResultSelectquery();
 
         $result0 = Array('tid' => 3, 'keyword' => 'music', 'value' => 'happy',);
         $result2 = Array('tid' => 5, 'keyword' => 'music', 'value' => 'Pop',);
@@ -191,7 +191,7 @@ EOF;
     }
 
     function test_res2single() {
-        $SqliteHelper =& $this->getResultSelectquery();
+        $SqliteHelper = $this->getResultSelectquery();
 
         $result1 = 3;
         $result2 = 4;
@@ -202,7 +202,7 @@ EOF;
     }
 
     function test_res_fetch_array() {
-        $SqliteHelper =& $this->getResultSelectquery();
+        $SqliteHelper = $this->getResultSelectquery();
 
         $result0 = Array(0 => 3, 1 => 'music', 2 => 'happy');
         $result1 = Array(0 => 4, 1 => 'music', 2 => 'Classic');
@@ -213,7 +213,7 @@ EOF;
     }
 
     function test_fetch_assoc() {
-        $SqliteHelper =& $this->getResultSelectquery();
+        $SqliteHelper = $this->getResultSelectquery();
 
         $result0 = Array('tid' => 3, 'keyword' => 'music', 'value' => 'happy',);
         $result1 = Array('tid' => 4, 'keyword' => 'music', 'value' => 'Classic');
@@ -224,7 +224,7 @@ EOF;
     }
 
     function test_res2count() {
-        $SqliteHelper =& $this->getResultSelectquery();
+        $SqliteHelper = $this->getResultSelectquery();
 
         $result = 5;
 
@@ -233,7 +233,7 @@ EOF;
     }
 
     function test_countChanges() {
-        $SqliteHelper =& $this->getResultInsertquery();
+        $SqliteHelper = $this->getResultInsertquery();
 
         $this->assertSame(0, $SqliteHelper->countChanges(false), 'Empty result');
         $this->assertEquals(1, $SqliteHelper->countChanges($SqliteHelper->res), 'Insert result');
