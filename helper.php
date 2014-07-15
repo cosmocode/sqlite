@@ -107,6 +107,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             return false;
         }
 
+        $this->create_function('GETACCESSLEVEL', array($this, '_getAccessLevel'), 1);
+
         return $this->_updatedb($init, $updatedir);
     }
 
@@ -180,6 +182,30 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             return false;
         }
         return ($version == $this->_currentDBversion());
+    }
+
+    /**
+     * Callback checks the permissions for the current user
+     *
+     * This function is registered as a SQL function named GETACCESSLEVEL
+     *
+     * @param  string $pageid page ID (needs to be resolved and cleaned)
+     * @return int permission level
+     */
+    public function _getAccessLevel($pageid) {
+        static $aclcache = array();
+
+        if(isset($aclcache[$pageid])) {
+            return $aclcache[$pageid];
+        }
+
+        if(isHiddenPage($pageid)) {
+            $acl = AUTH_NONE;
+        } else {
+            $acl = auth_quickaclcheck($pageid);
+        }
+        $aclcache[$pageid] = $acl;
+        return $acl;
     }
 
     /**
