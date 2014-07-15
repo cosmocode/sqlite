@@ -11,6 +11,8 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
 
     /**
      * return name of adapter
+     *
+     * @return string adapter name
      */
     public function getName() {
         return DOKU_EXT_SQLITE;
@@ -18,6 +20,10 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
 
     /**
      * open db
+     *
+     * @param $init
+     * @param bool $sqliteupgrade
+     * @return bool
      */
     public function opendb($init, $sqliteupgrade = false) {
         if($this->isSqlite3db($this->dbfile)) {
@@ -81,7 +87,7 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
     /**
      * Close the result set and it's cursors
      *
-     * @param $res
+     * @param bool|\SQLiteResult $res
      * @return bool
      */
     public function res_close($res) {
@@ -90,6 +96,10 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
 
     /**
      * Returns a complete result set as array
+     *
+     * @param bool|\SQLiteResult $res
+     * @param bool $assoc
+     * @return array
      */
     public function res2arr($res, $assoc = true) {
         $data = array();

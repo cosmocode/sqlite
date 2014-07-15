@@ -15,9 +15,15 @@ if(!defined('DOKU_EXT_NULL')) define('DOKU_EXT_NULL', 'null');
 
 require_once(DOKU_PLUGIN.'sqlite/classes/adapter.php');
 
+/**
+ * Class helper_plugin_sqlite
+ */
 class helper_plugin_sqlite extends DokuWiki_Plugin {
     var $adapter = null;
 
+    /**
+     * @return helper_plugin_sqlite_adapter|null
+     */
     public function getAdapter() {
         return $this->adapter;
     }
@@ -415,8 +421,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      *
      * Takes care of escaping
      *
-     * @internal param string $sql - the statement
-     * @internal param $arguments ...
+     * @internal param string $args - the arguments of query(), the first is the sql and others are values
      * @return bool|\SQLiteResult
      */
     public function query() {

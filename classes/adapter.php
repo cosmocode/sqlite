@@ -18,6 +18,11 @@ abstract class helper_plugin_sqlite_adapter {
      */
     public abstract function getName();
 
+    /**
+     * The file extension used by the adapter
+     *
+     * @return string
+     */
     public function getFileextension() {
         return $this->fileextension;
     }

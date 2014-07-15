@@ -13,6 +13,8 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
 
     /**
      * return name of adapter
+     *
+     * @return string adapter name
      */
     public function getName() {
         return DOKU_EXT_PDO;
