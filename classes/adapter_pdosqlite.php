@@ -76,7 +76,7 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
      * close current db
      */
     public function closedb() {
-        $this->db->close();
+        $this->db = null;
     }
 
     /**
