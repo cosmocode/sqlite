@@ -19,6 +19,7 @@ require_once(DOKU_PLUGIN.'sqlite/classes/adapter.php');
  * Class helper_plugin_sqlite
  */
 class helper_plugin_sqlite extends DokuWiki_Plugin {
+    /** @var helper_plugin_sqlite_adapter_pdosqlite|helper_plugin_sqlite_adapter|\helper_plugin_sqlite_adapter_sqlite2|null  */
     var $adapter = null;
 
     /**
@@ -484,6 +485,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      *
      * If you're doing SELECT queries inside a TRANSACTION, be sure to call this
      * function on all your results sets, before COMMITing the transaction.
+     *
+     * Also required when not all rows of a result are fetched
      *
      * @param $res
      * @return bool

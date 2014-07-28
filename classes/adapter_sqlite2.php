@@ -21,9 +21,11 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
     /**
      * open db
      *
-     * @param $init
-     * @param bool $sqliteupgrade
-     * @return bool
+     * @param bool $init          true if this is a new database to initialize
+     * @param bool $sqliteupgrade when connecting to a new database:
+     *                              false stops connecting to an .sqlite3 db when an .sqlite2 db already exist and warns instead,
+     *                              true let connecting so upgrading is possible
+     * @return bool true if connecting to sqlite3 db succeed
      */
     public function opendb($init, $sqliteupgrade = false) {
         if($this->isSqlite3db($this->dbfile)) {
@@ -99,7 +101,7 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
      *
      * @param bool|\SQLiteResult $res
      * @param bool $assoc
-     * @return array
+     * @return array of arrays of the rows
      */
     public function res2arr($res, $assoc = true) {
         $data = array();
@@ -117,6 +119,9 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
 
     /**
      * Return the next row of the given result set as associative array
+     *
+     * @param bool|\SQLiteResult $res
+     * @return array|bool next row or false
      */
     public function res2row($res) {
         if(!$res) return false;
@@ -125,6 +130,9 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
 
     /**
      * Return the first value from the next row.
+     *
+     * @param bool|\SQLiteResult $res
+     * @return bool|string
      */
     public function res2single($res) {
         if(!$res) return false;
@@ -135,6 +143,9 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
     /**
      * Run sqlite_escape_string() on the given string and surround it
      * with quotes
+     *
+     * @param string $string
+     * @return string escaped and quoted string
      */
     public function quote_string($string) {
         return "'".sqlite_escape_string($string)."'";
@@ -142,6 +153,9 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
 
     /**
      * Escape string for sql
+     *
+     * @param string $str
+     * @return string escaped
      */
     public function escape_string($str) {
         return sqlite_escape_string($str);
@@ -149,8 +163,13 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
 
     /**
      * Aggregation function for SQLite
+     * Callback function called for each row of the result set.
      *
      * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
+     *
+     * @param array &$context   (reference) argument where processed data can be stored
+     * @param string $string    column value
+     * @param string $separator separator between the values
      */
     public function _sqlite_group_concat_step(&$context, $string, $separator = ',') {
         $context['sep']    = $separator;
@@ -159,8 +178,12 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
 
     /**
      * Aggregation function for SQLite
+     * Callback function to aggregate the "stepped" data from each row and return it.
      *
      * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
+     *
+     * @param array &$context (reference) data as collected in step callback
+     * @return string final result of aggregation
      */
     public function _sqlite_group_concat_finalize(&$context) {
         $context['data'] = array_unique($context['data']);
@@ -169,6 +192,9 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
 
     /**
      * fetch the next row as zero indexed array
+     *
+     * @param bool|\SQLiteResult $res
+     * @return array|bool
      */
     public function res_fetch_array($res) {
         if(!$res) return false;
@@ -178,6 +204,9 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
 
     /**
      * fetch the next row as assocative array
+     *
+     * @param bool|\SQLiteResult $res
+     * @return array|bool
      */
     public function res_fetch_assoc($res) {
         if(!$res) return false;
@@ -189,6 +218,9 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
      * Count the number of records in result
      *
      * This function is really inperformant in PDO and should be avoided!
+     *
+     * @param bool|\SQLiteResult $res
+     * @return int
      */
     public function res2count($res) {
         if(!$res) return 0;
@@ -200,6 +232,9 @@ class helper_plugin_sqlite_adapter_sqlite2 extends helper_plugin_sqlite_adapter 
      * Count the number of records changed last time
      *
      * Don't work after a SELECT statement in PDO
+     *
+     * @param bool|\SQLiteResult $res
+     * @return int
      */
     public function countChanges($res) {
         if(!$res) return 0;
