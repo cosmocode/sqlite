@@ -18,6 +18,11 @@ abstract class helper_plugin_sqlite_adapter {
      */
     public abstract function getName();
 
+    /**
+     * The file extension used by the adapter
+     *
+     * @return string
+     */
     public function getFileextension() {
         return $this->fileextension;
     }
@@ -31,6 +36,10 @@ abstract class helper_plugin_sqlite_adapter {
 
     /**
      * Registers a User Defined Function for use in SQL statements
+     *
+     * @param string   $function_name The name of the function used in SQL statements
+     * @param callable $callback      Callback function to handle the defined SQL function
+     * @param int      $num_args      Number of arguments accepted by callback function
      */
     public abstract function create_function($function_name, $callback, $num_args);
 
@@ -77,12 +86,18 @@ abstract class helper_plugin_sqlite_adapter {
     }
 
     /**
-     * open db
+     * open db connection
+     *
+     * @param bool $init          true if this is a new database to initialize
+     * @param bool $sqliteupgrade when connecting to a new database:
+     *                              false stops connecting to an .sqlite3 db when an .sqlite2 db already exist and warns instead,
+     *                              true let connecting so upgrading is possible
+     * @return bool true if connecting to sqlite3 db succeed
      */
-    protected abstract function opendb($init);
+    protected abstract function opendb($init, $sqliteupgrade = false);
 
     /**
-     * close current db
+     * close current db connection
      */
     protected abstract function closedb();
 

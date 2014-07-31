@@ -147,6 +147,9 @@ EOF;
     function test_query_select() {
         $SqliteHelper = $this->getResultSelectquery();
         $this->assertNotEquals(false, $SqliteHelper->res);
+
+        //close cursor
+        $SqliteHelper->res_close($SqliteHelper->res);
     }
 
     function test_res2arr_assoc() {
@@ -188,6 +191,9 @@ EOF;
         $this->assertEquals($result0, $SqliteHelper->res2row($SqliteHelper->res));
         $SqliteHelper->res2row($SqliteHelper->res); // skip one row
         $this->assertEquals($result2, $SqliteHelper->res2row($SqliteHelper->res));
+
+        //close cursor
+        $SqliteHelper->res_close($SqliteHelper->res);
     }
 
     function test_res2single() {
@@ -199,6 +205,9 @@ EOF;
         $this->assertEquals(false, $SqliteHelper->res2single(false));
         $this->assertEquals($result1, $SqliteHelper->res2single($SqliteHelper->res));
         $this->assertEquals($result2, $SqliteHelper->res2single($SqliteHelper->res)); //next row
+
+        //close cursor
+        $SqliteHelper->res_close($SqliteHelper->res);
     }
 
     function test_res_fetch_array() {
@@ -210,6 +219,9 @@ EOF;
         $this->assertEquals(false, $SqliteHelper->res_fetch_array(false));
         $this->assertEquals($result0, $SqliteHelper->res_fetch_array($SqliteHelper->res));
         $this->assertEquals($result1, $SqliteHelper->res_fetch_array($SqliteHelper->res)); //next row
+
+        //close cursor
+        $SqliteHelper->res_close($SqliteHelper->res);
     }
 
     function test_fetch_assoc() {
@@ -221,6 +233,9 @@ EOF;
         $this->assertEquals(false, $SqliteHelper->res_fetch_assoc(false));
         $this->assertEquals($result0, $SqliteHelper->res_fetch_assoc($SqliteHelper->res));
         $this->assertEquals($result1, $SqliteHelper->res_fetch_assoc($SqliteHelper->res)); //next row
+
+        //close cursor
+        $SqliteHelper->res_close($SqliteHelper->res);
     }
 
     function test_res2count() {

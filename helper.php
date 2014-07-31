@@ -15,9 +15,16 @@ if(!defined('DOKU_EXT_NULL')) define('DOKU_EXT_NULL', 'null');
 
 require_once(DOKU_PLUGIN.'sqlite/classes/adapter.php');
 
+/**
+ * Class helper_plugin_sqlite
+ */
 class helper_plugin_sqlite extends DokuWiki_Plugin {
+    /** @var helper_plugin_sqlite_adapter_pdosqlite|helper_plugin_sqlite_adapter|\helper_plugin_sqlite_adapter_sqlite2|null  */
     var $adapter = null;
 
+    /**
+     * @return helper_plugin_sqlite_adapter|null
+     */
     public function getAdapter() {
         return $this->adapter;
     }
@@ -101,6 +108,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             return false;
         }
 
+        $this->create_function('GETACCESSLEVEL', array($this, '_getAccessLevel'), 1);
+
         return $this->_updatedb($init, $updatedir);
     }
 
@@ -174,6 +183,30 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             return false;
         }
         return ($version == $this->_currentDBversion());
+    }
+
+    /**
+     * Callback checks the permissions for the current user
+     *
+     * This function is registered as a SQL function named GETACCESSLEVEL
+     *
+     * @param  string $pageid page ID (needs to be resolved and cleaned)
+     * @return int permission level
+     */
+    public function _getAccessLevel($pageid) {
+        static $aclcache = array();
+
+        if(isset($aclcache[$pageid])) {
+            return $aclcache[$pageid];
+        }
+
+        if(isHiddenPage($pageid)) {
+            $acl = AUTH_NONE;
+        } else {
+            $acl = auth_quickaclcheck($pageid);
+        }
+        $aclcache[$pageid] = $acl;
+        return $acl;
     }
 
     /**
@@ -415,8 +448,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      *
      * Takes care of escaping
      *
-     * @internal param string $sql - the statement
-     * @internal param $arguments ...
+     * @internal param string $args - the arguments of query(), the first is the sql and others are values
      * @return bool|\SQLiteResult
      */
     public function query() {
@@ -453,6 +485,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      *
      * If you're doing SELECT queries inside a TRANSACTION, be sure to call this
      * function on all your results sets, before COMMITing the transaction.
+     *
+     * Also required when not all rows of a result are fetched
      *
      * @param $res
      * @return bool

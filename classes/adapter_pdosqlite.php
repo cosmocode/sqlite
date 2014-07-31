@@ -7,12 +7,15 @@
  * Sqlite Extension running.
  */
 class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapter {
+
     protected $fileextension = '.sqlite3';
     /** @var $db PDO */
     protected $db;
 
     /**
      * return name of adapter
+     *
+     * @return string adapter name
      */
     public function getName() {
         return DOKU_EXT_PDO;
@@ -20,13 +23,23 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
 
     /**
      * Registers a User Defined Function for use in SQL statements
+     *
+     * @param string   $function_name The name of the function used in SQL statements
+     * @param callable $callback      Callback function to handle the defined SQL function
+     * @param int      $num_args      Number of arguments accepted by callback function
      */
     public function create_function($function_name, $callback, $num_args) {
         $this->db->sqliteCreateFunction($function_name, $callback, $num_args);
     }
 
     /**
-     * open db
+     * open db connection
+     *
+     * @param bool $init          true if this is a new database to initialize
+     * @param bool $sqliteupgrade when connecting to a new database:
+     *                              false stops connecting to an .sqlite3 db when an .sqlite2 db already exist and warns instead,
+     *                              true let connecting so upgrading is possible
+     * @return bool true if connecting to sqlite3 db succeed
      */
     public function opendb($init, $sqliteupgrade = false) {
         if($init) {
@@ -71,10 +84,10 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
     }
 
     /**
-     * close current db
+     * close current db connection
      */
     public function closedb() {
-        $this->db->close();
+        $this->db = null;
     }
 
     /**
@@ -100,15 +113,21 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
     /**
      * Close the result set and it's cursors
      *
-     * @param PDOStatement $res
+     * @param bool|PDOStatement $res
      * @return bool
      */
     public function res_close($res) {
+        if(!$res) return false;
+
         return $res->closeCursor();
     }
 
     /**
      * Returns a complete result set as array
+     *
+     * @param bool|PDOStatement $res
+     * @param bool $assoc
+     * @return array with arrays of the rows
      */
     public function res2arr($res, $assoc = true) {
         if(!$res) return array();
@@ -122,6 +141,9 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
 
     /**
      * Return the next row of the given result set as associative array
+     *
+     * @param bool|PDOStatement $res
+     * @return bool|array
      */
     public function res2row($res) {
         if(!$res) return false;
@@ -131,6 +153,9 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
 
     /**
      * Return the first value from the next row.
+     *
+     * @param bool|PDOStatement $res
+     * @return bool|string
      */
     public function res2single($res) {
         if(!$res) return false;
@@ -145,6 +170,9 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
     /**
      * Run sqlite_escape_string() on the given string and surround it
      * with quotes
+     *
+     * @param string $string
+     * @return string
      */
     public function quote_string($string) {
         return $this->db->quote($string);
@@ -152,6 +180,9 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
 
     /**
      * Escape string for sql
+     *
+     * @param string $str
+     * @return string
      */
     public function escape_string($str) {
         return trim($this->db->quote($str), "'");
@@ -161,6 +192,11 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
      * Aggregation function for SQLite via PDO
      *
      * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
+     *
+     * @param null|array &$context   (reference) argument where processed data can be stored
+     * @param int         $rownumber current row number
+     * @param string      $string    column value
+     * @param string      $separator separator added between values
      */
     public function _pdo_group_concat_step(&$context, $rownumber, $string, $separator = ',') {
         if(is_null($context)) {
@@ -171,13 +207,16 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
         }
 
         $context['data'][] = $string;
-        return $context;
     }
 
     /**
      * Aggregation function for SQLite via PDO
      *
      * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
+     *
+     * @param null|array &$context   (reference) data as collected in step callback
+     * @param int         $rownumber number of rows over which the aggregate was performed.
+     * @return null|string
      */
     public function _pdo_group_concat_finalize(&$context, $rownumber) {
         if(!is_array($context)) {
@@ -189,6 +228,9 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
 
     /**
      * fetch the next row as zero indexed array
+     *
+     * @param bool|PDOStatement $res
+     * @return bool|array
      */
     public function res_fetch_array($res) {
         if(!$res) return false;
@@ -198,6 +240,9 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
 
     /**
      * fetch the next row as assocative array
+     *
+     * @param bool|PDOStatement $res
+     * @return bool|array
      */
     public function res_fetch_assoc($res) {
         if(!$res) return false;
@@ -209,6 +254,9 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
      * Count the number of records in result
      *
      * This function is really inperformant in PDO and should be avoided!
+     *
+     * @param bool|PDOStatement $res
+     * @return int
      */
     public function res2count($res) {
         if(!$res) return 0;
@@ -224,6 +272,9 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
      * Count the number of records changed last time
      *
      * Don't work after a SELECT statement
+     *
+     * @param bool|PDOStatement $res
+     * @return int
      */
     public function countChanges($res) {
         if(!$res) return 0;
