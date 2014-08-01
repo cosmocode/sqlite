@@ -36,7 +36,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
         } elseif(isset($_POST['sqlite_convert'])) {
 
             /** @var $DBI helper_plugin_sqlite */
-            $DBI        =& plugin_load('helper', 'sqlite');
+            $DBI        = plugin_load('helper', 'sqlite');
             $time_start = microtime(true);
 
             if($dumpfile = $DBI->dumpDatabase($_REQUEST['db'], DOKU_EXT_SQLITE)) {
@@ -76,7 +76,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
 
             $sqlcommandform = true;
             /** @var $DBI helper_plugin_sqlite */
-            $DBI =& plugin_load('helper', 'sqlite');
+            $DBI = plugin_load('helper', 'sqlite');
             if($_REQUEST['version'] == 'sqlite2') {
                 if(helper_plugin_sqlite_adapter::isSqlite3db($conf['metadir'].'/'.$_REQUEST['db'].'.sqlite')) {
 
