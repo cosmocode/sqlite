@@ -27,7 +27,7 @@ class helper_plugin_sqlite_adapter_null extends helper_plugin_sqlite_adapter {
      /**
       * open db
       */
-     protected function opendb($init) {
+     protected function opendb($init, $sqliteupgrade = false) {
          return false;
      }
 
