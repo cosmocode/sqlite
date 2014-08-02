@@ -207,6 +207,7 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
         }
 
         $context['data'][] = $string;
+        return $context;
     }
 
     /**
