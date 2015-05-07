@@ -187,7 +187,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                         msg($cnt.' affected rows in '.($time < 0.0001 ? substr($time, 0, 5).substr($time, -3) : substr($time, 0, 7)).' seconds', 1);
                         if(!$cnt) continue;
 
-                        echo '<p>';
+                        echo '<div>';
                         $ths = array_keys($result[0]);
                         echo '<table class="inline">';
                         echo '<tr>';
@@ -204,7 +204,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                             echo '</tr>';
                         }
                         echo '</table>';
-                        echo '</p>';
+                        echo '</div>';
                     }
                 }
 
