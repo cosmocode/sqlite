@@ -448,7 +448,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      *
      * Takes care of escaping
      *
-     * @internal param string $args - the arguments of query(), the first is the sql and others are values
+     *
+     * @param string ...$args - the arguments of query(), the first is the sql and others are values
      * @return bool|\SQLiteResult
      */
     public function query() {

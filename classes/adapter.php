@@ -106,9 +106,7 @@ abstract class helper_plugin_sqlite_adapter {
      *
      * Takes care of escaping
      *
-     * @param string $args
-     * @internal param string $sql - the statement
-     * @internal param $arguments ...
+     * @param array $args Array with sql string and parameters
      * @return bool|\PDOStatement|\SQLiteResult
      */
     public function query($args) {
@@ -142,7 +140,7 @@ abstract class helper_plugin_sqlite_adapter {
      *
      * Takes care of escaping
      *
-     * @param $args
+     * @param array $args
      *    array of arguments:
      *      - string $sql - the statement
      *      - arguments...
