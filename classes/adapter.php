@@ -35,6 +35,18 @@ abstract class helper_plugin_sqlite_adapter {
     }
 
     /**
+     * Gives direct access to the database
+     *
+     * This is only usefull for the PDO Adapter as this gives direct access to the PDO object
+     * nontheless it should generally not be used
+     *
+     * @return null|PDO|resource
+     */
+    public function getDb() {
+       return $this->db;
+    }
+
+    /**
      * Registers a User Defined Function for use in SQL statements
      *
      * @param string   $function_name The name of the function used in SQL statements
