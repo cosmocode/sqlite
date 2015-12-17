@@ -10,6 +10,7 @@ abstract class helper_plugin_sqlite_adapter {
     protected $dbfile;
     protected $db = null;
     protected $data = array();
+    protected $nativealter = false;
 
     /**
      * return name of adapter
@@ -17,6 +18,15 @@ abstract class helper_plugin_sqlite_adapter {
      * @return string backend name as defined in helper.php
      */
     public abstract function getName();
+
+    /**
+     * Should the nativ ALTER TABLE implementation be used instead of workaround?
+     *
+     * @param bool $set
+     */
+    public function setUseNativeAlter($set) {
+        $this->nativealter = $set;
+    }
 
     /**
      * The file extension used by the adapter
@@ -131,9 +141,11 @@ abstract class helper_plugin_sqlite_adapter {
         if(!$sql) return false;
 
         // intercept ALTER TABLE statements
-        $match = null;
-        if(preg_match('/^ALTER\s+TABLE\s+([\w\.]+)\s+(.*)/i', $sql, $match)) {
-            return $this->_altertable($match[1], $match[2]);
+        if(!$this->nativealter) {
+            $match = null;
+            if(preg_match('/^ALTER\s+TABLE\s+([\w\.]+)\s+(.*)/i', $sql, $match)) {
+                return $this->_altertable($match[1], $match[2]);
+            }
         }
 
         // execute query
