@@ -453,6 +453,25 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     }
 
     /**
+     * Convenience function to run an INSERT OR REPLACE operation
+     *
+     * The function takes a key-value array with the column names in the key and the actual value in the value,
+     * build the appropriate query and executes it.
+     *
+     * @param string $table the table the entry should be saved to (will not be escaped)
+     * @param array $entry A simple key-value pair array (only values will be escaped)
+     * @return bool|SQLiteResult
+     */
+    public function storeEntry($table, $entry) {
+        $keys = join(',', array_keys($entry));
+        $vals = join(',', array_fill(0,count($entry),'?'));
+
+        $sql = "INSERT INTO $table ($keys) VALUES ($vals)";
+        return $this->query($sql, array_values($entry));
+    }
+
+
+    /**
      * Execute a query with the given parameters.
      *
      * Takes care of escaping
