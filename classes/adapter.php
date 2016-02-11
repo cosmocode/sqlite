@@ -57,6 +57,15 @@ abstract class helper_plugin_sqlite_adapter {
     }
 
     /**
+     * Returns the path to the database file (if initialized)
+     *
+     * @return string
+     */
+    public function getDbFile() {
+        return $this->dbfile;
+    }
+
+    /**
      * Registers a User Defined Function for use in SQL statements
      *
      * @param string   $function_name The name of the function used in SQL statements
