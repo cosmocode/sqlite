@@ -103,7 +103,10 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
 
         if(!$res) {
             $err = $this->db->errorInfo();
-            msg($err[0].' '.$err[1].' '.$err[2].':<br /><pre>'.hsc($sql).'</pre>', -1);
+            if(defined('DOKU_UNITTEST')) {
+                throw new RuntimeException($err[0] . ' ' . $err[1] . ' ' . $err[2] . ":\n" .$sql);
+            }
+            msg($err[0] . ' ' . $err[1] . ' ' . $err[2] . ':<br /><pre>' . hsc($sql) . '</pre>', -1);
             return false;
         }
 
