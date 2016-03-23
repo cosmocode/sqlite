@@ -109,6 +109,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
 
         $this->create_function('GETACCESSLEVEL', array($this, '_getAccessLevel'), 1);
+        $this->create_function('PAGEEXISTS', array($this, '_pageexists'), 1);
 
         return $this->_updatedb($init, $updatedir);
     }
@@ -213,6 +214,23 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
         $aclcache[$pageid] = $acl;
         return $acl;
+    }
+
+    /**
+     * Wrapper around page_exists() with static caching
+     *
+     * This function is registered as a SQL function named PAGEEXISTS
+     *
+     * @param string $pageid
+     * @return int 0|1
+     */
+    public function _pageexists($pageid) {
+        static $cache = array();
+        if(!isset($cache[$pageid])) {
+            $cache[$pageid] = page_exists($pageid);
+
+        }
+        return (int) $cache[$pageid];
     }
 
     /**
