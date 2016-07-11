@@ -110,6 +110,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
 
         $this->create_function('GETACCESSLEVEL', array($this, '_getAccessLevel'), 1);
         $this->create_function('PAGEEXISTS', array($this, '_pageexists'), 1);
+        $this->create_function('REGEXP', array($this, '_regexp'), 2);
 
         return $this->_updatedb($init, $updatedir);
     }
@@ -231,6 +232,20 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
 
         }
         return (int) $cache[$pageid];
+    }
+
+    /**
+     * Match a regular expression against a value
+     *
+     * This function is registered as a SQL function named REGEXP
+     *
+     * @param string $regexp
+     * @param string $value
+     * @return bool
+     */
+    public function _regexp($regexp, $value) {
+        $regexp = addcslashes($regexp, '/');
+        return (bool) preg_match('/'.$regexp.'/u', $value);
     }
 
     /**
