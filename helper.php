@@ -111,6 +111,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         $this->create_function('GETACCESSLEVEL', array($this, '_getAccessLevel'), 1);
         $this->create_function('PAGEEXISTS', array($this, '_pageexists'), 1);
         $this->create_function('REGEXP', array($this, '_regexp'), 2);
+        $this->create_function('CLEANID', 'cleanID', 1);
+        $this->create_function('RESOLVEPAGE', array($this, '_resolvePage'), 1);
 
         return $this->_updatedb($init, $updatedir);
     }
@@ -246,6 +248,24 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
     public function _regexp($regexp, $value) {
         $regexp = addcslashes($regexp, '/');
         return (bool) preg_match('/'.$regexp.'/u', $value);
+    }
+
+    /**
+     * Resolves a page ID (relative namespaces, plurals etc)
+     *
+     * This function is registered as a SQL function named RESOLVEPAGE
+     *
+     * @param string $page The page ID to resolve
+     * @param string $context The page ID (not namespace!) to resolve the page with
+     * @return null|string
+     */
+    public function _resolvePage($page, $context) {
+        if(is_null($page)) return null;
+        if(is_null($context)) return cleanID($page);
+
+        $ns = getNS($context);
+        resolve_pageid($ns, $page, $exists);
+        return $page;
     }
 
     /**
