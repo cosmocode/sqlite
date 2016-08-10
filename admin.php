@@ -199,6 +199,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                             echo '<tr>';
                             $tds = array_values($row);
                             foreach($tds as $td) {
+                                if($td === null) $td='␀';
                                 echo '<td>'.hsc($td).'</td>';
                             }
                             echo '</tr>';
