@@ -6,10 +6,10 @@
  * @group plugins
  */
 class sqlite_helper_abstract_test extends DokuWikiTest {
-    function setup() {
+    function setUp() {
         $this->pluginsEnabled[] = 'data';
         $this->pluginsEnabled[] = 'sqlite';
-        parent::setup();
+        parent::setUp();
     }
 
     /**
@@ -252,5 +252,19 @@ EOF;
 
         $this->assertSame(0, $SqliteHelper->countChanges(false), 'Empty result');
         $this->assertEquals(1, $SqliteHelper->countChanges($SqliteHelper->res), 'Insert result');
+    }
+
+    function test_serialize() {
+        $SqliteHelper = $this->getSqliteHelper();
+
+        $res = $SqliteHelper->query('SELECT * FROM testdata');
+        $this->assertNotFalse($res);
+        $SqliteHelper->res_close($res);
+
+        $obj = unserialize(serialize($SqliteHelper));
+
+        $res = $obj->query('SELECT * FROM testdata');
+        $this->assertNotFalse($res);
+        $obj->res_close($res);
     }
 }
