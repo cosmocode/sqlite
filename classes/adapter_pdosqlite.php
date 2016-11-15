@@ -227,6 +227,9 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
             return null;
         }
         $context['data'] = array_unique($context['data']);
+        if (empty($context['data'][0])) {
+            return null;
+        }
         return join($context['sep'], $context['data']);
     }
 
