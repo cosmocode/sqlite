@@ -137,7 +137,6 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      */
     private function _updatedb($init, $updatedir) {
         if($init) {
-
             $current = 0;
         } else {
             $current = $this->_currentDBversion();
@@ -162,10 +161,29 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         for($i = $current + 1; $i <= $latest; $i++) {
             $file = sprintf($updatedir.'/update%04d.sql', $i);
             if(file_exists($file)) {
-                if(!$this->_runupdatefile($file, $i)) {
-                    msg("SQLite: '".$this->adapter->getDbname()."' database upgrade failed for version ".$i, -1);
-                    return false;
+                // prepare Event data
+                $data = array(
+                    'from' => $current,
+                    'to' => $i,
+                    'file' => &$file,
+                    'sqlite' => $this
+                );
+                $event = new Doku_Event('PLUGIN_SQLITE_DATABASE_UPGRADE', $data);
+                if($event->advise_before()) {
+                    // execute the migration
+                    if(!$this->_runupdatefile($file, $i)) {
+                        msg("SQLite: '".$this->adapter->getDbname()."' database upgrade failed for version ".$i, -1);
+                        return false;
+                    }
+                } else {
+                    if($event->result) {
+                        $this->query("INSERT OR REPLACE INTO opts (val,opt) VALUES (?,'dbversion')", $i);
+                    } else {
+                        return false;
+                    }
                 }
+                $event->advise_after();
+
             } else {
                 msg("SQLite: update file $file not found, skipped.", -1);
             }
