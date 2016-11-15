@@ -485,6 +485,24 @@ abstract class helper_plugin_sqlite_adapter {
      */
     public abstract function countChanges($res);
 
+    /**
+     * Do not serialize the DB connection
+     *
+     * @return array
+     */
+    public function __sleep() {
+        $this->db = null;
+        return array_keys(get_object_vars($this));
+    }
+
+    /**
+     * On deserialization, reinit database connection
+     */
+    public function __wakeup() {
+        $init = false;
+        $this->initdb($this->dbname, $init);
+    }
+
 }
 
 // vim:ts=4:sw=4:et:enc=utf-8:
