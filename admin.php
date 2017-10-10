@@ -21,6 +21,8 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
 
     function handle() {
         global $conf;
+        global $INPUT;
+
         if(isset($_POST['sqlite_rename'])) {
 
             $path = $conf['metadir'].'/'.$_REQUEST['db'];
@@ -60,6 +62,36 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
             $time     = $time_end - $time_start;
             msg('Database "'.hsc($_REQUEST['db']).'" converted from sqlite 2 to 3 in '.$time.' seconds.', 0);
 
+        } elseif($INPUT->bool('sqlite_export') && checkSecurityToken()) {
+
+            /** @var $DBI helper_plugin_sqlite */
+            $DBI        = plugin_load('helper', 'sqlite');
+            $dbname = $INPUT->str('db');
+
+            $dumpfile = $DBI->dumpDatabase($dbname, DOKU_EXT_PDO, true);
+            if ($dumpfile) {
+                header('Content-Type: text/sql');
+                header('Content-Disposition: attachment; filename="'.$dbname.'.sql";');
+
+                readfile($dumpfile);
+                exit(0);
+            }
+        } elseif($INPUT->bool('sqlite_import') && checkSecurityToken()) {
+            global $conf;
+
+            /** @var $DBI helper_plugin_sqlite */
+            $DBI        = plugin_load('helper', 'sqlite');
+            $dbname = $INPUT->str('db');
+            $dumpfile = $_FILES['dumpfile']['tmp_name'];
+
+            if (empty($dumpfile)) {
+                msg($this->getLang('import_no_file'), -1);
+                return;
+            }
+
+            if ($DBI->fillDatabaseFromDump($dbname, $dumpfile, true)) {
+                msg($this->getLang('import_success'), 1);
+            }
         }
     }
 
@@ -149,6 +181,29 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                              )
                     ).
                     '">'.$this->getLang('index').'</a></div></li>';
+                echo '<li><div class="li"><a href="'.
+                    wl(
+                        $ID, array(
+                               'do'     => 'admin',
+                               'page'   => 'sqlite',
+                               'db'     => $_REQUEST['db'],
+                               'version'=> $_REQUEST['version'],
+                               'sqlite_export' => '1',
+                               'sectok' => getSecurityToken()
+                           )
+                    ).
+                    '">'.$this->getLang('export').'</a></div></li>';
+
+
+                $form = new \dokuwiki\Form\Form(array('enctype' => 'multipart/form-data'));
+                $form->setHiddenField('id', $ID);
+                $form->setHiddenField('do', 'admin');
+                $form->setHiddenField('page', 'sqlite');
+                $form->setHiddenField('db', $_REQUEST['db']);
+                $form->setHiddenField('version', $_REQUEST['version']);
+                $form->addElement(new dokuwiki\Form\InputElement('file', 'dumpfile'));
+                $form->addButton('sqlite_import', $this->getLang('import'));
+                echo '<li>' . $form->toHTML() . '</li>';
                 echo '</ul>';
 
                 $form = new Doku_Form(array('class'=> 'sqliteplugin'));
