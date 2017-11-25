@@ -140,7 +140,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
             $current = 0;
         } else {
             $current = $this->_currentDBversion();
-            if(!$current) {
+            if($current === false) {
                 msg("SQLite: no DB version found. '".$this->adapter->getDbname()."' DB probably broken.", -1);
                 return false;
             }
