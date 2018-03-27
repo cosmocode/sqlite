@@ -164,7 +164,7 @@ class helper_plugin_sqlite_adapter_pdosqlite extends helper_plugin_sqlite_adapte
         if(!$res) return false;
 
         $data = $res->fetch(PDO::FETCH_NUM, PDO::FETCH_ORI_ABS, 0);
-        if(!count($data)) {
+        if(empty($data)) {
             return false;
         }
         return $data[0];
