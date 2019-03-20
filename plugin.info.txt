@@ -1,7 +1,7 @@
 base   sqlite
 author Andreas Gohr
 email  dokuwiki@cosmocode.de
-date   2018-03-27
+date   2019-03-20
 name   sqlite plugin
 desc   A helper plugin to easily access a SQLite database
 url    http://www.dokuwiki.org/plugin:sqlite
