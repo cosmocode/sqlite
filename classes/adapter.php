@@ -303,8 +303,7 @@ abstract class helper_plugin_sqlite_adapter {
         }
         $newcolumns = '';
         $oldcolumns = '';
-        reset($newcols);
-        while(list($key, $val) = each($newcols)) {
+        foreach ($newcols as $key => $val) {
             $newcolumns .= ($newcolumns ? ', ' : '').$val;
             $oldcolumns .= ($oldcolumns ? ', ' : '').$key;
         }
@@ -389,8 +388,7 @@ abstract class helper_plugin_sqlite_adapter {
         $createnewtableSQL = 'CREATE '.substr(trim(preg_replace("'".$tmpname."'", $table, $createtesttableSQL, 1)), 17);
         $newcolumns        = '';
         $oldcolumns        = '';
-        reset($newcols);
-        while(list($key, $val) = each($newcols)) {
+        foreach($newcols as $key => $val) {
             $newcolumns .= ($newcolumns ? ', ' : '').$val;
             $oldcolumns .= ($oldcolumns ? ', ' : '').$key;
         }
