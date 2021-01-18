@@ -537,7 +537,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         $keys = join(',', array_keys($entry));
         $vals = join(',', array_fill(0,count($entry),'?'));
 
-        $sql = "INSERT INTO $table ($keys) VALUES ($vals)";
+        $sql = "INSERT OR REPLACE INTO $table ($keys) VALUES ($vals)";
         return $this->query($sql, array_values($entry));
     }
 
