@@ -303,7 +303,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         for($i=0; $i<$len; $i++){
             $prev = $i ? $sql[$i-1] : "\n";
             $char = $sql[$i];
-            $next = $sql[$i+1];
+            $next = $sql[$i+1] ?? null;
 
             // in comment? ignore everything until line end
             if($in_com){

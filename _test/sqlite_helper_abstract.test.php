@@ -6,7 +6,7 @@
  * @group plugins
  */
 class sqlite_helper_abstract_test extends DokuWikiTest {
-    function setUp() {
+    function setUp(): void {
         $this->pluginsEnabled[] = 'data';
         $this->pluginsEnabled[] = 'sqlite';
         parent::setUp();
