@@ -9,7 +9,7 @@ require_once dirname(__FILE__).'/sqlite_helper_abstract.test.php';
  */
 class sqlite_helper_sqlite2_test extends sqlite_helper_abstract_test {
 
-    function setup() {
+    function setup(): void {
         if(!function_exists('sqlite_open')){
             $this->markTestSkipped('The sqlite2 extension is not available.');
         }else{
@@ -18,7 +18,7 @@ class sqlite_helper_sqlite2_test extends sqlite_helper_abstract_test {
         parent::setup();
     }
 
-    function tearDown() {
+    function tearDown(): void {
         $_ENV['SQLITE_SKIP_PDO'] = false;
         parent::tearDown();
     }
