@@ -64,8 +64,11 @@ class syntax_plugin_sqlite_query extends DokuWiki_Syntax_Plugin
         foreach($xml[0]->attributes() as $a => $b) {
             $attributes[$a] = (string) $b;
         }
+        $tag_value = (string) $xml[0];
+        list($db, $name) = explode('.', $tag_value);
 
-        $data = ['name' => (string) $xml[0], 'attributes' => $attributes];
+
+        $data = ['db' => $db, 'name' => $name, 'attributes' => $attributes];
         return $data;
     }
 
@@ -88,29 +91,27 @@ class syntax_plugin_sqlite_query extends DokuWiki_Syntax_Plugin
 
         /** @var $DBI helper_plugin_sqlite */
         $DBI        = plugin_load('helper', 'sqlite');
-        $dbname = $data['attributes']['db'];
 
-        $path = $conf['metadir'].'/'.$dbname . '.sqlite3'; // FIXME: only sqlite3
-        if(!file_exists($path)) {
-            echo '<div class="error">unknown database: '.$dbname.'</div>';
+        /** @var $helper helper_plugin_sqlite */
+        $sqlite_db = plugin_load('helper', 'sqlite');
+        $sqlite_db->init('sqlite', DOKU_PLUGIN . 'sqlite/db/');
+
+        $db = $data['db'];
+        $query_name = $data['name'];
+        if(!$DBI->init($db, '')) {
+            echo '<div class="error">unknown database: '.$db.'</div>';
             return false;
         }
 
-        $meta_queries_table_name = 'meta_queries';
-
-        $DBI->init($dbname, '');
-        $res = $DBI->query("SELECT sql FROM $meta_queries_table_name WHERE name=?", $data['name']);
-        if($res === false) {
-            return false;
-        }
-        $sql = $DBI->res2single($res);
+        $res = $sqlite_db->query("SELECT sql FROM queries WHERE db=? AND name=?", $db, $query_name);
+        $sql = $sqlite_db->res2single($res);
         if (empty($sql)) {
-            echo '<div class="error">unknown query: '.$data['name'].'</div>';
+            echo '<div class="error">unknown query: '.$query_name.'</div>';
             return false;
         }
 
         $res = $DBI->query($sql);
-        if($res === false) {
+        if(!$res) {
             echo '<div class="error">cannot execute query: '.$sql.'</div>';
             return false;
         }

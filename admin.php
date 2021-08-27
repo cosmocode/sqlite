@@ -207,7 +207,9 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 echo '<li>' . $form->toHTML() . '</li>';
                 echo '</ul>';
 
-                if(!$DBI->init($_REQUEST['db'], '')) return;
+                /** @var $helper helper_plugin_sqlite */
+                $sqlite_db = plugin_load('helper', 'sqlite');
+                $sqlite_db->init('sqlite', DOKU_PLUGIN . 'sqlite/db/');
 
                 if($INPUT->str('action') == 'save') {
                     $ok = true;
@@ -219,20 +221,17 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                         echo '<div class="error">give the query name</div>';
                         $ok = false;
                     }
+
                     if($ok) {
-                        // Create queries table if not exists
-                        $res = $DBI->query("CREATE TABLE IF NOT EXISTS meta_queries
-                                                    (id INTEGER PRIMARY KEY,
-                                                    name TEXT NOT NULL,
-                                                    sql TEXT NOT NULL);");
-                        $DBI->storeEntry('meta_queries', array(
+                        $sqlite_db->storeEntry('queries', array(
+                            'db' => $_REQUEST['db'],
                             'name' => $INPUT->str('name'),
                             'sql' => $INPUT->str('sql')
                         ));
                         echo '<div class="success">query saved</div>';
                     }
                 } elseif($INPUT->str('action') == 'delete') {
-                    $DBI->query("DELETE FROM meta_queries WHERE id=?;", $INPUT->int('id'));
+                    $sqlite_db->query("DELETE FROM queries WHERE id=?;", $INPUT->int('id'));
                     echo '<div class="success">query deleted</div>';
                 }
 
@@ -251,24 +250,19 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 $form->printForm();
 
                 // List saved queries
-                $meta_queries_table_name = 'meta_queries';
-                $res = $DBI->query("SELECT name FROM sqlite_master WHERE type='table' AND name=?;", $meta_queries_table_name);
-                $cnt = $DBI->res2count($res);
-                if($cnt == 1) {
-                    print '<h3>Saved queries</h3>';
-                    $res = $DBI->query("SELECT id, name, sql FROM $meta_queries_table_name");
-                    $result = $DBI->res2arr($res);
+                $res = $sqlite_db->query("SELECT id, name, sql FROM queries WHERE db=?", $_REQUEST['db']);
+                $result = $sqlite_db->res2arr($res);
+                if(count($result) > 0) {
+                    echo '<h3>Saved queries</h3>';
                     echo '<div>';
                     echo '<table class="inline">';
                     echo '<tr>';
-                    echo '<th>id</th>';
                     echo '<th>name</th>';
                     echo '<th>sql</th>';
                     echo '<th></th>';
                     echo '</tr>';
                     foreach($result as $row) {
                         echo '<tr>';
-                        echo '<td>'.hsc($row['id']).'</td>';
                         echo '<td>'.hsc($row['name']).'</td>';
                         $link = wl($ID, array(  'do'=> 'admin',
                                                 'page'=> 'sqlite',
@@ -292,9 +286,10 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                     echo '</div>';
                 }
 
-                $result = $DBI->res2arr($res);
-
                 if($_REQUEST['sql']) {
+
+                    if(!$DBI->init($_REQUEST['db'], '')) return;
+
                     print '<h3>Query results</h3>';
                     $sql = $DBI->SQLstring2array($_REQUEST['sql']);
                     foreach($sql as $s) {
