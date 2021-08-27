@@ -1,35 +1,40 @@
 <?php
+
+namespace dokuwiki\plugin\sqlite\test;
+
+use DokuWikiTest;
+
 /**
  * Test the abstract functions in the helper to check backend unity and some other functions
  *
  * @group plugin_sqlite
  * @group plugins
  */
-class sqlite_helper_abstract_test extends DokuWikiTest {
-    function setUp() {
+class AbstractTest extends DokuWikiTest {
+    public function setUp(): void {
         $this->pluginsEnabled[] = 'data';
         $this->pluginsEnabled[] = 'sqlite';
         parent::setUp();
     }
 
     /**
-     * @return helper_plugin_sqlite
-     * @throws Exception when databse is not initialized
+     * @return \helper_plugin_sqlite
+     * @throws \Exception when databse is not initialized
      */
     function getSqliteHelper() {
-        /** @var $SqliteHelper helper_plugin_sqlite */
+        /** @var $SqliteHelper \helper_plugin_sqlite */
         $SqliteHelper = plugin_load('helper', 'sqlite');
         if(!$SqliteHelper->init("testdb", DOKU_PLUGIN."sqlite/_test/db")) {
-            throw new Exception('Initializing Sqlite Helper fails!');
+            throw new \Exception('Initializing Sqlite Helper fails!');
         }
         return $SqliteHelper;
     }
 
     /**
-     * @return helper_plugin_sqlite
+     * @return \helper_plugin_sqlite
      */
     function getResultSelectquery() {
-        /** @var $SqliteHelper helper_plugin_sqlite */
+        /** @var $SqliteHelper \helper_plugin_sqlite */
         $SqliteHelper = $this->getSqliteHelper();
 
         $sql               = "SELECT * FROM testdata WHERE keyword='music'";
@@ -39,10 +44,10 @@ class sqlite_helper_abstract_test extends DokuWikiTest {
     }
 
     /**
-     * @return helper_plugin_sqlite
+     * @return \helper_plugin_sqlite
      */
     function getResultInsertquery() {
-        /** @var $SqliteHelper helper_plugin_sqlite */
+        /** @var $SqliteHelper \helper_plugin_sqlite */
         $SqliteHelper = $this->getSqliteHelper();
 
         $sql               = "INSERT INTO testdata VALUES(20,'glass','Purple')";
@@ -52,7 +57,7 @@ class sqlite_helper_abstract_test extends DokuWikiTest {
     }
 
     function test_SQLstring2array() {
-        /** @var $SqliteHelper helper_plugin_sqlite */
+        /** @var $SqliteHelper \helper_plugin_sqlite */
         $SqliteHelper = $this->getSqliteHelper();
 
         $sqlstring1 = "INSERT INTO data VALUES('text','text ;text')";
@@ -87,8 +92,8 @@ EOF;
 
         $this->assertEquals(6, count($statements), 'number of detected statements');
 
-        $this->assertContains('some multi\'\'d line string', $statements[0]);
-        $this->assertContains('-- not a comment', $statements[0]);
+        $this->assertStringContainsString('some multi\'\'d line string', $statements[0]);
+        $this->assertStringContainsString('-- not a comment', $statements[0]);
 
         $this->assertEquals('SELECT * FROM bar', $statements[1]);
         $this->assertEquals('SELECT * FROM bax', $statements[2]);
@@ -97,7 +102,7 @@ EOF;
     }
 
     function test_prepareSql() {
-        /** @var $SqliteHelper helper_plugin_sqlite */
+        /** @var $SqliteHelper \helper_plugin_sqlite */
         $SqliteHelper = $this->getSqliteHelper();
 
         $sql1 = "SELECT * FROM cheese WHERE NOT 'ho''les' OR 'mouse'";
@@ -117,7 +122,7 @@ EOF;
     }
 
     function test_quote_and_join() {
-        /** @var $SqliteHelper helper_plugin_sqlite */
+        /** @var $SqliteHelper \helper_plugin_sqlite */
         $SqliteHelper = $this->getSqliteHelper();
 
         $string       = "Co'mpl''ex \"st'\"ring";
@@ -127,7 +132,7 @@ EOF;
     }
 
     function test_quote_string() {
-        /** @var $SqliteHelper helper_plugin_sqlite */
+        /** @var $SqliteHelper \helper_plugin_sqlite */
         $SqliteHelper = $this->getSqliteHelper();
 
         $string       = "Co'mpl''ex \"st'\"ring";
@@ -136,7 +141,7 @@ EOF;
     }
 
     function test_escape_string() {
-        /** @var $SqliteHelper helper_plugin_sqlite */
+        /** @var $SqliteHelper \helper_plugin_sqlite */
         $SqliteHelper = $this->getSqliteHelper();
 
         $string       = "Co'mpl''ex \"st'\"ring";
