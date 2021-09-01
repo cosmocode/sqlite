@@ -214,11 +214,11 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 if($INPUT->str('action') == 'save') {
                     $ok = true;
                     if(empty($INPUT->str('sql'))) {
-                        echo '<div class="error">give the query</div>';
+                        msg($this->getLang('validation query_required'), -1);
                         $ok = false;
                     }
                     if(empty($INPUT->str('name'))) {
-                        echo '<div class="error">give the query name</div>';
+                        msg($this->getLang('validation query_name_required'), -1);
                         $ok = false;
                     }
 
@@ -228,14 +228,14 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                             'name' => $INPUT->str('name'),
                             'sql' => $INPUT->str('sql')
                         ));
-                        echo '<div class="success">query saved</div>';
+                        msg($this->getLang('success query_saved'), 1);
                     }
                 } elseif($INPUT->str('action') == 'delete') {
-                    $sqlite_db->query("DELETE FROM queries WHERE id=?;", $INPUT->int('id'));
-                    echo '<div class="success">query deleted</div>';
+                    $sqlite_db->query("DELETE FROM queries WHERE id=?;", $INPUT->int('query_id'));
+                    msg($this->getLang('success query_deleted'), 1);
                 }
 
-                $form = new Doku_Form(array('class'=> 'sqliteplugin'));
+                $form = new Doku_Form(array('class'=> 'sqliteplugin', 'action' => wl($ID, '', true, '&')));
                 $form->startFieldset('SQL Command');
                 $form->addHidden('id', $ID);
                 $form->addHidden('do', 'admin');
@@ -244,8 +244,8 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 $form->addHidden('version', $_REQUEST['version']);
                 $form->addElement('<textarea name="sql" class="edit">'.hsc($_REQUEST['sql']).'</textarea>');
                 $form->addElement('<input type="submit" class="button" /> ');
-                $form->addElement('<label>Query name: <input type="text" name="name" /></label> ');
-                $form->addElement('<button name="action" value="save">Save</button>');
+                $form->addElement('<label>'.$this->getLang('query_name').': <input type="text" name="name" /></label> ');
+                $form->addElement('<button name="action" value="save">'.$this->getLang('save_query').'</button>');
                 $form->endFieldset();
                 $form->printForm();
 
@@ -253,7 +253,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 $res = $sqlite_db->query("SELECT id, name, sql FROM queries WHERE db=?", $_REQUEST['db']);
                 $result = $sqlite_db->res2arr($res);
                 if(count($result) > 0) {
-                    echo '<h3>Saved queries</h3>';
+                    echo '<h3>' . $this->getLang('saved_queries') . '</h3>';
                     echo '<div>';
                     echo '<table class="inline">';
                     echo '<tr>';
@@ -277,7 +277,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                             'db'=> $_REQUEST['db'],
                             'version'=> $_REQUEST['version'],
                             'action' => 'delete',
-                            'id' => $row['id'],
+                            'query_id' => $row['id'],
                             'sectok'=> getSecurityToken()));
                         echo '<td><a href="'.$link.'">delete</a></td>';
                         echo '</tr>';

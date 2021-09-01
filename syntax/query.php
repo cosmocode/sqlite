@@ -77,7 +77,12 @@ class syntax_plugin_sqlite_query extends DokuWiki_Syntax_Plugin
             }
         }
 
-        $data = ['db' => $db, 'query_name' => $query_name, 'parsers' => $parsers];
+        $args = [];
+        if (isset($attributes['args'])) {
+            $args = array_map('trim', explode(',', $attributes['args']));
+        }
+
+        $data = ['db' => $db, 'query_name' => $query_name, 'parsers' => $parsers, 'args' => $args];
         return $data;
     }
 
@@ -92,7 +97,7 @@ class syntax_plugin_sqlite_query extends DokuWiki_Syntax_Plugin
      */
     public function render($mode, Doku_Renderer $renderer, $data)
     {
-        global $conf;
+        global $INFO;
 
         if ($mode !== 'xhtml') {
             return false;
@@ -107,31 +112,57 @@ class syntax_plugin_sqlite_query extends DokuWiki_Syntax_Plugin
 
         $db = $data['db'];
         $query_name = $data['query_name'];
+        $parsers = $data['parsers'];
+        $args = $data['args'];
+
+        // process args special variables
+        $args = str_replace(
+            array(
+                '$ID$',
+                '$NS$',
+                '$PAGE$',
+                '$USER$',
+                '$TODAY$'
+            ),
+            array(
+                $INFO['id'],
+                getNS($INFO['id']),
+                noNS($INFO['id']),
+                isset($_SERVER['REMOTE_USER']) ? $_SERVER['REMOTE_USER'] : '',
+                date('Y-m-d')
+            ),
+            $args
+        );
 
         $res = $sqlite_db->query("SELECT sql FROM queries WHERE db=? AND name=?", $db, $query_name);
         $sql = $sqlite_db->res2single($res);
         if (empty($sql)) {
-            msg('unknown database: ' . $db . ' or query name: '.$query_name, -1);
+            msg('Unknown database: ' . $db . ' or query name: '.$query_name, -1);
             return false;
         }
 
         if(!$DBI->init($db, '')) {
-            msg('cannot initialize db: '.$db, -1);
+            msg('Cannot initialize db: '.$db, -1);
             return false;
         }
 
-        $res = $DBI->query($sql);
+        $res = $DBI->query($sql, $args);
         if(!$res) {
-            msg('cannot execute query: '.$sql, -1);
+            msg('Cannot execute query: '.$sql, -1);
             return false;
         }
         $result = $DBI->res2arr($res);
 
+        if (!$result) {
+            $renderer->cdata($this->getLang('none'));
+            return true;
+        }
+
         // check if we use any parsers
-        if (count($data['parsers']) > 0) {
+        if (count($parsers) > 0) {
             $class_name = '\dokuwiki\plugin\struct\meta\Column';
             if (!class_exists($class_name)) {
-                msg('install struct plugin to use parsers', -1);
+                msg('Install struct plugin to use parsers', -1);
                 return false;
             }
             $parser_types = $class_name::allTypes();
@@ -150,10 +181,10 @@ class syntax_plugin_sqlite_query extends DokuWiki_Syntax_Plugin
             $tds = array_values($row);
             foreach($tds as $i => $td) {
                 if($td === null) $td='␀';
-                if (isset($data['parsers'][$i])) {
-                    $parser = $data['parsers'][$i];
+                if (isset($parsers[$i])) {
+                    $parser = $parsers[$i];
                     if (!isset($parser_types[$parser])) {
-                        msg('unknown parser: ' . $parser, -1);
+                        msg('Unknown parser: ' . $parser, -1);
                         $renderer->doc .= '<td>'.hsc($td).'</td>';
                     } else {
                         /** @var \dokuwiki\plugin\struct\types\AbstractBaseType $parser */
