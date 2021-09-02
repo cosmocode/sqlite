@@ -73,7 +73,13 @@ class syntax_plugin_sqlite_query extends DokuWiki_Syntax_Plugin
             $length = strlen($needle);
             if (substr($name, 0, $length) === $needle) {
                 list($_, $col) = explode('_', $name);
-                $parsers[$col] = $value;
+                if (preg_match('/([[:alpha:]]+)\((.*)\)/', $value, $matches)) {
+                    $class = $matches[1];
+                    $config = json_decode($matches[2], true);
+                    $parsers[$col] = ['class' => $class, 'config' => $config];
+                } else {
+                    $parsers[$col] = ['class' => $value, 'config' => null];
+                }
             }
         }
 
@@ -182,13 +188,14 @@ class syntax_plugin_sqlite_query extends DokuWiki_Syntax_Plugin
             foreach($tds as $i => $td) {
                 if($td === null) $td='␀';
                 if (isset($parsers[$i])) {
-                    $parser = $parsers[$i];
-                    if (!isset($parser_types[$parser])) {
-                        msg('Unknown parser: ' . $parser, -1);
+                    $parser_class = $parsers[$i]['class'];
+                    $parser_config = $parsers[$i]['config'];
+                    if (!isset($parser_types[$parser_class])) {
+                        msg('Unknown parser: ' . $parser_class, -1);
                         $renderer->doc .= '<td>'.hsc($td).'</td>';
                     } else {
                         /** @var \dokuwiki\plugin\struct\types\AbstractBaseType $parser */
-                        $parser = new $parser_types[$parser]();
+                        $parser = new $parser_types[$parser_class]($parser_config);
                         $renderer->doc .= '<td>';
                         $parser->renderValue($td, $renderer, $mode);
                         $renderer->doc .= '</td>';
