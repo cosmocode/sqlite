@@ -59,7 +59,12 @@ class syntax_plugin_sqlite_query extends DokuWiki_Syntax_Plugin
      */
     public function handle($match, $state, $pos, Doku_Handler $handler)
     {
+        libxml_use_internal_errors(true);
         $xml = simplexml_load_string($match);
+        if ($xml === false) {
+            msg('Syntax: "'.hsc($match) . '" is not valid xml', -1);
+            return null;
+        }
         $attributes = [];
         foreach($xml[0]->attributes() as $a => $b) {
             $attributes[$a] = (string) $b;
@@ -105,7 +110,7 @@ class syntax_plugin_sqlite_query extends DokuWiki_Syntax_Plugin
     {
         global $INFO;
 
-        if ($mode !== 'xhtml') {
+        if ($mode !== 'xhtml' || $data === null) {
             return false;
         }
 
