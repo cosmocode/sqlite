@@ -56,7 +56,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
         }
 
         if(!$this->adapter) {
-            msg('SQLite & PDO SQLite support missing in this PHP install - plugin will not work', -1);
+            msg('SQLite & PDO SQLite support missing in this PHP install - The sqlite plugin will not work', -1);
         }
     }
 
