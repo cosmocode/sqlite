@@ -1,0 +1,3 @@
+====== Accesso SQLite ======
+
+Questa schermata consente di interfacciare i database SQLite esistenti direttamente. Selezionate i database dalla tabella dei contenuti ed inserite i vostri comandi SQL.
