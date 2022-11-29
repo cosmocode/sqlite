@@ -213,12 +213,12 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 $form->addHidden('page', 'sqlite');
                 $form->addHidden('db', $_REQUEST['db']);
                 $form->addHidden('version', $_REQUEST['version']);
-                $form->addElement('<textarea name="sql" class="edit">'.hsc($_REQUEST['sql']).'</textarea>');
+                if(isset($_REQUEST['sql'])) $form->addElement('<textarea name="sql" class="edit">'.hsc($_REQUEST['sql']).'</textarea>');
                 $form->addElement('<input type="submit" class="button" />');
                 $form->endFieldset();
                 $form->printForm();
 
-                if($_REQUEST['sql']) {
+                if(isset($_REQUEST['sql'])) {
 
                     if(!$DBI->init($_REQUEST['db'], '')) return;
 
