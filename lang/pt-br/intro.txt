@@ -1,0 +1,3 @@
+====== Acesso SQLite ======
+
+Essa tela permite que você interaja diretamente com os bancos de dados SQLite existentes. Basta selecionar os bancos de dados no índice e inserir seus comandos SQL.
