@@ -1,0 +1,3 @@
+====== Truy cập SQLite ======
+
+Màn hình này cho phép bạn giao tiếp trực tiếp với cơ sở dữ liệu SQLite hiện có. Chỉ cần chọn cơ sở dữ liệu từ mục lục và nhập các lệnh SQL của bạn.
