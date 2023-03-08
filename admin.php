@@ -287,7 +287,6 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 }
 
                 if($_REQUEST['sql']) {
-
                     if(!$DBI->init($_REQUEST['db'], '')) return;
 
                     print '<h3>Query results</h3>';
