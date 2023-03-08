@@ -242,7 +242,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 $form->addHidden('page', 'sqlite');
                 $form->addHidden('db', $_REQUEST['db']);
                 $form->addHidden('version', $_REQUEST['version']);
-                $form->addElement('<textarea name="sql" class="edit">'.hsc($_REQUEST['sql']).'</textarea>');
+                $form->addElement('<textarea name="sql" class="edit">'.hsc($_REQUEST['sql'] ?? '').'</textarea>');
                 $form->addElement('<input type="submit" class="button" /> ');
                 $form->addElement('<label>'.$this->getLang('query_name').': <input type="text" name="name" /></label> ');
                 $form->addElement('<button name="action" value="save">'.$this->getLang('save_query').'</button>');
@@ -286,7 +286,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                     echo '</div>';
                 }
 
-                if($_REQUEST['sql']) {
+                if(isset($_REQUEST['sql'])) {
                     if(!$DBI->init($_REQUEST['db'], '')) return;
 
                     print '<h3>Query results</h3>';
