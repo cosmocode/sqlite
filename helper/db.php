@@ -1,13 +1,12 @@
 <?php
 
 /**
- * DokuWiki Plugin struct (Helper Component)
+ * DokuWiki Plugin sqlite (Helper Component)
  *
  * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
  * @author  Andreas Gohr, Michael Große <dokuwiki@cosmocode.de>
  */
 
-use dokuwiki\plugin\struct\meta\StructException;
 
 class helper_plugin_sqlite_db extends DokuWiki_Plugin
 {
@@ -69,7 +68,7 @@ class helper_plugin_sqlite_db extends DokuWiki_Plugin
             $this->init();
         }
         if (!$this->sqlite && $throw) {
-            throw new StructException('no sqlite');
+            throw new \RuntimeException('no sqlite');
         }
         return $this->sqlite;
     }
