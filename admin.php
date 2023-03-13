@@ -7,6 +7,7 @@
  */
 
 use dokuwiki\Form\Form;
+use dokuwiki\Form\InputElement;
 
 // must be run within Dokuwiki
 if(!defined('DOKU_INC')) die();
@@ -51,7 +52,6 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 exit(0);
             }
         } elseif($INPUT->bool('sqlite_import') && checkSecurityToken()) {
-            global $conf;
 
             /** @var $DBI helper_plugin_sqlite */
             $DBI        = plugin_load('helper', 'sqlite');
@@ -65,6 +65,35 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
 
             if ($DBI->fillDatabaseFromDump($dbname, $dumpfile, true)) {
                 msg($this->getLang('import_success'), 1);
+            }
+        } elseif($INPUT->bool('sqlite_query_save') && checkSecurityToken()) {
+            if($INPUT->str('sql') === '') {
+                msg($this->getLang('validation query_required'), -1);
+                return;
+            }
+            if($INPUT->str('name') === '') {
+                msg($this->getLang('validation query_name_required'), -1);
+                return;
+            }
+            /** @var helper_plugin_sqlite_db $db_helper */
+            $db_helper = $this->loadHelper('sqlite_db');
+            $sqlite_db = $db_helper->getDB();
+            $ok = $sqlite_db->storeEntry('queries', array(
+                'db' => $INPUT->str('db'),
+                'name' => $INPUT->str('name'),
+                'sql' => $INPUT->str('sql')
+            ));
+            if ($ok) {
+                msg($this->getLang('success query_saved'), 1);
+            }
+        } elseif($INPUT->has('sqlite_query_delete') && checkSecurityToken()) {
+            /** @var helper_plugin_sqlite_db $db_helper */
+            $db_helper = $this->loadHelper('sqlite_db');
+            $sqlite_db = $db_helper->getDB();
+
+            $ok = $sqlite_db->query("DELETE FROM queries WHERE id=?;", $INPUT->int('sqlite_query_delete'));
+            if ($ok) {
+                msg($this->getLang('success query_deleted'), 1);
             }
         }
     }
@@ -92,12 +121,14 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                         'This plugin needs your database file has the extension ".sqlite3"
                         instead of ".sqlite" before it will be recognized as sqlite3 database.', 2
                     );
-                    $form = new Form();
-                    $form->setHiddenField('do', 'admin');
-                    $form->setHiddenField('page', 'sqlite');
-                    $form->setHiddenField('sqlite_rename', 'go');
-                    $form->setHiddenField('db', $INPUT->str('db'));
-                    $form->addButton('', sprintf($this->getLang('rename2to3'), hsc($INPUT->str('db'))))
+                    $action = wl($ID, [
+                            'do'     => 'admin',
+                            'page'   => 'sqlite',
+                            'db'     => $INPUT->str('db'),
+                            'version'=> $INPUT->str('version')
+                        ], false, '&');
+                    $form = new Form(['action' => $action]);
+                    $form->addButton('sqlite_rename', sprintf($this->getLang('rename2to3'), hsc($INPUT->str('db'))))
                         ->attr('type', 'submit');
                     print $form->toHTML();
 
@@ -110,6 +141,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                         you should manually convert "'.hsc($INPUT->str('db')).'.sqlite" in the meta directory to "'.hsc($INPUT->str('db')).'.sqlite3".<br />
                         See for info about the conversion '.$this->external_link('http://www.sqlite.org/version3.html').'.', -1
                     );
+                    $sqlcommandform = false;
                 }
             } else {
                 if(!$DBI->existsPDOSqlite()) {
@@ -158,60 +190,37 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                     '">'.$this->getLang('export').'</a></div></li>';
 
 
-                $form = new \dokuwiki\Form\Form(array('enctype' => 'multipart/form-data'));
-                $form->setHiddenField('id', $ID);
-                $form->setHiddenField('do', 'admin');
-                $form->setHiddenField('page', 'sqlite');
-                $form->setHiddenField('db', $INPUT->str('db'));
-                $form->setHiddenField('version', $INPUT->str('version'));
-                $form->addElement(new dokuwiki\Form\InputElement('file', 'dumpfile'));
+                $action = wl($ID, [
+                    'do'     => 'admin',
+                    'page'   => 'sqlite',
+                    'db'     => $INPUT->str('db'),
+                    'version'=> $INPUT->str('version')
+                ], false, '&');
+                $form = new Form(['action' => $action, 'enctype' => 'multipart/form-data']);
+                $form->addElement(new InputElement('file', 'dumpfile'));
                 $form->addButton('sqlite_import', $this->getLang('import'));
                 echo '<li>' . $form->toHTML() . '</li>';
                 echo '</ul>';
 
-                /** @var $helper helper_plugin_sqlite */
-                $sqlite_db = plugin_load('helper', 'sqlite');
-                $sqlite_db->init('sqlite', DOKU_PLUGIN . 'sqlite/db/');
-
-                if($INPUT->str('action') == 'save') {
-                    $ok = true;
-                    if(empty($INPUT->str('sql'))) {
-                        msg($this->getLang('validation query_required'), -1);
-                        $ok = false;
-                    }
-                    if(empty($INPUT->str('name'))) {
-                        msg($this->getLang('validation query_name_required'), -1);
-                        $ok = false;
-                    }
-
-                    if($ok) {
-                        $sqlite_db->storeEntry('queries', array(
-                            'db' => $INPUT->str('db'),
-                            'name' => $INPUT->str('name'),
-                            'sql' => $INPUT->str('sql')
-                        ));
-                        msg($this->getLang('success query_saved'), 1);
-                    }
-                } elseif($INPUT->str('action') == 'delete') {
-                    $sqlite_db->query("DELETE FROM queries WHERE id=?;", $INPUT->int('query_id'));
-                    msg($this->getLang('success query_deleted'), 1);
-                }
-
-                $form = new Doku_Form(array('class'=> 'sqliteplugin', 'action' => wl($ID, '', true, '&')));
-                $form->startFieldset('SQL Command');
-                $form->addHidden('id', $ID);
-                $form->addHidden('do', 'admin');
-                $form->addHidden('page', 'sqlite');
-                $form->addHidden('db', $INPUT->str('db'));
-                $form->addHidden('version', $INPUT->str('version'));
-                $form->addElement('<textarea name="sql" class="edit">'.hsc($INPUT->str('sql')).'</textarea>');
-                $form->addElement('<input type="submit" class="button" /> ');
-                $form->addElement('<label>'.$this->getLang('query_name').': <input type="text" name="name" /></label> ');
-                $form->addElement('<button name="action" value="save">'.$this->getLang('save_query').'</button>');
-                $form->endFieldset();
-                $form->printForm();
+                $action = wl($ID, [
+                    'do'     => 'admin',
+                    'page'   => 'sqlite',
+                    'db'     => $INPUT->str('db'),
+                    'version'=> $INPUT->str('version')
+                ], false, '&');
+                $form = (new Form(['action' => $action]))->addClass('sqliteplugin');
+                $form->addFieldsetOpen('SQL Command');
+                $form->addTextarea('sql')->addClass('edit')->val(hsc($INPUT->str('sql')));
+                $form->addElement(new InputElement('submit', ''));
+                $form->addTextInput('name', $this->getLang('query_name'));
+                $form->addButton('sqlite_query_save', $this->getLang('save_query'));
+                $form->addFieldsetClose();
+                print $form->toHTML();
 
                 // List saved queries
+                /** @var helper_plugin_sqlite_db $db_helper */
+                $db_helper = $this->loadHelper('sqlite_db');
+                $sqlite_db = $db_helper->getDB();
                 $res = $sqlite_db->query("SELECT id, name, sql FROM queries WHERE db=?", $INPUT->str('db'));
                 $result = $sqlite_db->res2arr($res);
                 if(count($result) > 0) {
@@ -238,8 +247,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                             'page'=> 'sqlite',
                             'db'=> $INPUT->str('db'),
                             'version'=> $INPUT->str('version'),
-                            'action' => 'delete',
-                            'query_id' => $row['id'],
+                            'sqlite_query_delete' => $row['id'],
                             'sectok'=> getSecurityToken()));
                         echo '<td><a href="'.$link.'">delete</a></td>';
                         echo '</tr>';
