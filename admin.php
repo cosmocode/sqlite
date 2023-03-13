@@ -6,6 +6,8 @@
  * @author  Andreas Gohr <andi@splitbrain.org>
  */
 
+use dokuwiki\Form\Form;
+
 // must be run within Dokuwiki
 if(!defined('DOKU_INC')) die();
 
@@ -23,7 +25,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
         global $conf;
         global $INPUT;
 
-        if($INPUT->bool('sqlite_rename')) {
+        if($INPUT->bool('sqlite_rename') && checkSecurityToken()) {
 
             $path = $conf['metadir'].'/'.$INPUT->str('db');
             if(io_rename($path.'.sqlite', $path.'.sqlite3')) {
@@ -90,12 +92,14 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                         'This plugin needs your database file has the extension ".sqlite3"
                         instead of ".sqlite" before it will be recognized as sqlite3 database.', 2
                     );
-                    $form = new Doku_Form(array('method'=> 'post'));
-                    $form->addHidden('page', 'sqlite');
-                    $form->addHidden('sqlite_rename', 'go');
-                    $form->addHidden('db', $INPUT->str('db'));
-                    $form->addElement(form_makeButton('submit', 'admin', sprintf($this->getLang('rename2to3'), hsc($INPUT->str('db')))));
-                    $form->printForm();
+                    $form = new Form();
+                    $form->setHiddenField('do', 'admin');
+                    $form->setHiddenField('page', 'sqlite');
+                    $form->setHiddenField('sqlite_rename', 'go');
+                    $form->setHiddenField('db', $INPUT->str('db'));
+                    $form->addButton('', sprintf($this->getLang('rename2to3'), hsc($INPUT->str('db'))))
+                        ->attr('type', 'submit');
+                    print $form->toHTML();
 
                     if($DBI->existsPDOSqlite()) $sqlcommandform = false;
 
