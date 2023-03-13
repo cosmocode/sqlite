@@ -23,28 +23,28 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
         global $conf;
         global $INPUT;
 
-        if(isset($_POST['sqlite_rename'])) {
+        if($INPUT->bool('sqlite_rename')) {
 
-            $path = $conf['metadir'].'/'.$_REQUEST['db'];
+            $path = $conf['metadir'].'/'.$INPUT->str('db');
             if(io_rename($path.'.sqlite', $path.'.sqlite3')) {
                 msg('Renamed database file succesfull!', 1);
                 //set to new situation
-                $_REQUEST['version'] = 'sqlite3';
+                $INPUT->set('version', 'sqlite3');
 
             } else {
                 msg('Renaming database file fails!', -1);
             }
 
-        } elseif(isset($_POST['sqlite_convert'])) {
+        } elseif($INPUT->bool('sqlite_convert')) {
 
             /** @var $DBI helper_plugin_sqlite */
             $DBI        = plugin_load('helper', 'sqlite');
             $time_start = microtime(true);
 
-            if($dumpfile = $DBI->dumpDatabase($_REQUEST['db'], DOKU_EXT_SQLITE)) {
+            if($dumpfile = $DBI->dumpDatabase($INPUT->str('db'), DOKU_EXT_SQLITE)) {
                 msg('Database temporary dumped to file: '.hsc($dumpfile).'. Now loading in new database...', 1);
 
-                if(!$DBI->fillDatabaseFromDump($_REQUEST['db'], $dumpfile)) {
+                if(!$DBI->fillDatabaseFromDump($INPUT->str('db'), $dumpfile)) {
                     msg('Conversion failed!', -1);
                     return false;
                 }
@@ -56,11 +56,11 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
 
                 msg('Conversion succeed!', 1);
                 //set to new situation
-                $_REQUEST['version'] = 'sqlite3';
+                $INPUT->set('version', 'sqlite3');
             }
             $time_end = microtime(true);
             $time     = $time_end - $time_start;
-            msg('Database "'.hsc($_REQUEST['db']).'" converted from sqlite 2 to 3 in '.$time.' seconds.', 0);
+            msg('Database "'.hsc($INPUT->str('db')).'" converted from sqlite 2 to 3 in '.$time.' seconds.', 0);
 
         } elseif($INPUT->bool('sqlite_export') && checkSecurityToken()) {
 
@@ -102,16 +102,16 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
 
         echo $this->locale_xhtml('intro');
 
-        if(isset($_REQUEST['db']) && checkSecurityToken()) {
+        if($INPUT->has('db') && checkSecurityToken()) {
 
-            echo '<h2>'.$this->getLang('db').' "'.hsc($_REQUEST['db']).'"</h2>';
+            echo '<h2>'.$this->getLang('db').' "'.hsc($INPUT->str('db')).'"</h2>';
             echo '<div class="level2">';
 
             $sqlcommandform = true;
             /** @var $DBI helper_plugin_sqlite */
             $DBI = plugin_load('helper', 'sqlite');
-            if($_REQUEST['version'] == 'sqlite2') {
-                if(helper_plugin_sqlite_adapter::isSqlite3db($conf['metadir'].'/'.$_REQUEST['db'].'.sqlite')) {
+            if($INPUT->str('version') == 'sqlite2') {
+                if(helper_plugin_sqlite_adapter::isSqlite3db($conf['metadir'].'/'.$INPUT->str('db').'.sqlite')) {
 
                     msg('This is a database in sqlite3 format.', 2);
                     msg(
@@ -121,8 +121,8 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                     $form = new Doku_Form(array('method'=> 'post'));
                     $form->addHidden('page', 'sqlite');
                     $form->addHidden('sqlite_rename', 'go');
-                    $form->addHidden('db', $_REQUEST['db']);
-                    $form->addElement(form_makeButton('submit', 'admin', sprintf($this->getLang('rename2to3'), hsc($_REQUEST['db']))));
+                    $form->addHidden('db', $INPUT->str('db'));
+                    $form->addElement(form_makeButton('submit', 'admin', sprintf($this->getLang('rename2to3'), hsc($INPUT->str('db')))));
                     $form->printForm();
 
                     if($DBI->existsPDOSqlite()) $sqlcommandform = false;
@@ -136,14 +136,14 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                             $form = new Doku_Form(array('method'=> 'post'));
                             $form->addHidden('page', 'sqlite');
                             $form->addHidden('sqlite_convert', 'go');
-                            $form->addHidden('db', $_REQUEST['db']);
-                            $form->addElement(form_makeButton('submit', 'admin', sprintf($this->getLang('convert2to3'), hsc($_REQUEST['db']))));
+                            $form->addHidden('db', $INPUT->str('db'));
+                            $form->addElement(form_makeButton('submit', 'admin', sprintf($this->getLang('convert2to3'), hsc($INPUT->str('db')))));
                             $form->printForm();
                         } else {
                             msg(
                                 'Before PDO sqlite can handle this format, it needs a conversion to the sqlite3 format.
                                 Because PHP sqlite extension is not available,
-                                you should manually convert "'.hsc($_REQUEST['db']).'.sqlite" in the meta directory to "'.hsc($_REQUEST['db']).'.sqlite3".<br />
+                                you should manually convert "'.hsc($INPUT->str('db')).'.sqlite" in the meta directory to "'.hsc($INPUT->str('db')).'.sqlite3".<br />
                                 See for info about the conversion '.$this->external_link('http://www.sqlite.org/version3.html').'.', -1
                             );
                         }
@@ -163,8 +163,8 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                         $ID, array(
                                   'do'     => 'admin',
                                   'page'   => 'sqlite',
-                                  'db'     => $_REQUEST['db'],
-                                  'version'=> $_REQUEST['version'],
+                                  'db'     => $INPUT->str('db'),
+                                  'version'=> $INPUT->str('version'),
                                   'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'table\' ORDER BY name',
                                   'sectok' => getSecurityToken()
                              )
@@ -175,8 +175,8 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                         $ID, array(
                                   'do'     => 'admin',
                                   'page'   => 'sqlite',
-                                  'db'     => $_REQUEST['db'],
-                                  'version'=> $_REQUEST['version'],
+                                  'db'     => $INPUT->str('db'),
+                                  'version'=> $INPUT->str('version'),
                                   'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'index\' ORDER BY name',
                                   'sectok' => getSecurityToken()
                              )
@@ -187,8 +187,8 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                         $ID, array(
                                'do'     => 'admin',
                                'page'   => 'sqlite',
-                               'db'     => $_REQUEST['db'],
-                               'version'=> $_REQUEST['version'],
+                               'db'     => $INPUT->str('db'),
+                               'version'=> $INPUT->str('version'),
                                'sqlite_export' => '1',
                                'sectok' => getSecurityToken()
                            )
@@ -200,8 +200,8 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 $form->setHiddenField('id', $ID);
                 $form->setHiddenField('do', 'admin');
                 $form->setHiddenField('page', 'sqlite');
-                $form->setHiddenField('db', $_REQUEST['db']);
-                $form->setHiddenField('version', $_REQUEST['version']);
+                $form->setHiddenField('db', $INPUT->str('db'));
+                $form->setHiddenField('version', $INPUT->str('version'));
                 $form->addElement(new dokuwiki\Form\InputElement('file', 'dumpfile'));
                 $form->addButton('sqlite_import', $this->getLang('import'));
                 echo '<li>' . $form->toHTML() . '</li>';
@@ -224,7 +224,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
 
                     if($ok) {
                         $sqlite_db->storeEntry('queries', array(
-                            'db' => $_REQUEST['db'],
+                            'db' => $INPUT->str('db'),
                             'name' => $INPUT->str('name'),
                             'sql' => $INPUT->str('sql')
                         ));
@@ -240,9 +240,9 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 $form->addHidden('id', $ID);
                 $form->addHidden('do', 'admin');
                 $form->addHidden('page', 'sqlite');
-                $form->addHidden('db', $_REQUEST['db']);
-                $form->addHidden('version', $_REQUEST['version']);
-                $form->addElement('<textarea name="sql" class="edit">'.hsc($_REQUEST['sql'] ?? '').'</textarea>');
+                $form->addHidden('db', $INPUT->str('db'));
+                $form->addHidden('version', $INPUT->str('version'));
+                $form->addElement('<textarea name="sql" class="edit">'.hsc($INPUT->str('sql')).'</textarea>');
                 $form->addElement('<input type="submit" class="button" /> ');
                 $form->addElement('<label>'.$this->getLang('query_name').': <input type="text" name="name" /></label> ');
                 $form->addElement('<button name="action" value="save">'.$this->getLang('save_query').'</button>');
@@ -250,7 +250,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                 $form->printForm();
 
                 // List saved queries
-                $res = $sqlite_db->query("SELECT id, name, sql FROM queries WHERE db=?", $_REQUEST['db']);
+                $res = $sqlite_db->query("SELECT id, name, sql FROM queries WHERE db=?", $INPUT->str('db'));
                 $result = $sqlite_db->res2arr($res);
                 if(count($result) > 0) {
                     echo '<h3>' . $this->getLang('saved_queries') . '</h3>';
@@ -266,16 +266,16 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                         echo '<td>'.hsc($row['name']).'</td>';
                         $link = wl($ID, array(  'do'=> 'admin',
                                                 'page'=> 'sqlite',
-                                                'db'=> $_REQUEST['db'],
-                                                'version'=> $_REQUEST['version'],
+                                                'db'=> $INPUT->str('db'),
+                                                'version'=> $INPUT->str('version'),
                                                 'sql' => $row['sql'],
                                                 'sectok'=> getSecurityToken()));
                         echo '<td><a href="'.$link.'">'.hsc($row['sql']).'</a></td>';
 
                         $link = wl($ID, array(  'do'=> 'admin',
                             'page'=> 'sqlite',
-                            'db'=> $_REQUEST['db'],
-                            'version'=> $_REQUEST['version'],
+                            'db'=> $INPUT->str('db'),
+                            'version'=> $INPUT->str('version'),
                             'action' => 'delete',
                             'query_id' => $row['id'],
                             'sectok'=> getSecurityToken()));
@@ -286,11 +286,11 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                     echo '</div>';
                 }
 
-                if(isset($_REQUEST['sql'])) {
-                    if(!$DBI->init($_REQUEST['db'], '')) return;
+                if($INPUT->has('sql')) {
+                    if(!$DBI->init($INPUT->str('db'), '')) return;
 
                     print '<h3>Query results</h3>';
-                    $sql = $DBI->SQLstring2array($_REQUEST['sql']);
+                    $sql = $DBI->SQLstring2array($INPUT->str('sql'));
                     foreach($sql as $s) {
                         $s = preg_replace('!^\s*--.*$!m', '', $s);
                         $s = trim($s);
