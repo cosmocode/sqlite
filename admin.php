@@ -34,34 +34,6 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
             } else {
                 msg('Renaming database file fails!', -1);
             }
-
-        } elseif($INPUT->bool('sqlite_convert')) {
-
-            /** @var $DBI helper_plugin_sqlite */
-            $DBI        = plugin_load('helper', 'sqlite');
-            $time_start = microtime(true);
-
-            if($dumpfile = $DBI->dumpDatabase($INPUT->str('db'), DOKU_EXT_SQLITE)) {
-                msg('Database temporary dumped to file: '.hsc($dumpfile).'. Now loading in new database...', 1);
-
-                if(!$DBI->fillDatabaseFromDump($INPUT->str('db'), $dumpfile)) {
-                    msg('Conversion failed!', -1);
-                    return false;
-                }
-
-                //TODO delete dumpfile
-                //return @unlink($dumpfile);
-                //TODO delete old sqlite2-db
-                // return @unlink($conf['metadir'].'/'.$_REQUEST['db'].'.sqlite');
-
-                msg('Conversion succeed!', 1);
-                //set to new situation
-                $INPUT->set('version', 'sqlite3');
-            }
-            $time_end = microtime(true);
-            $time     = $time_end - $time_start;
-            msg('Database "'.hsc($INPUT->str('db')).'" converted from sqlite 2 to 3 in '.$time.' seconds.', 0);
-
         } elseif($INPUT->bool('sqlite_export') && checkSecurityToken()) {
 
             /** @var $DBI helper_plugin_sqlite */
@@ -128,26 +100,12 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
                     if($DBI->existsPDOSqlite()) $sqlcommandform = false;
 
                 } else {
-                    if($DBI->existsPDOSqlite()) {
-                        $sqlcommandform = false;
-                        msg('This is a database in sqlite2 format.', 2);
-
-                        if($DBI->existsSqlite2()) {
-                            $form = new Doku_Form(array('method'=> 'post'));
-                            $form->addHidden('page', 'sqlite');
-                            $form->addHidden('sqlite_convert', 'go');
-                            $form->addHidden('db', $INPUT->str('db'));
-                            $form->addElement(form_makeButton('submit', 'admin', sprintf($this->getLang('convert2to3'), hsc($INPUT->str('db')))));
-                            $form->printForm();
-                        } else {
-                            msg(
-                                'Before PDO sqlite can handle this format, it needs a conversion to the sqlite3 format.
-                                Because PHP sqlite extension is not available,
-                                you should manually convert "'.hsc($INPUT->str('db')).'.sqlite" in the meta directory to "'.hsc($INPUT->str('db')).'.sqlite3".<br />
-                                See for info about the conversion '.$this->external_link('http://www.sqlite.org/version3.html').'.', -1
-                            );
-                        }
-                    }
+                    msg(
+                        'Before PDO sqlite can handle this format, it needs a conversion to the sqlite3 format.
+                        Because PHP sqlite extension is no longer supported,
+                        you should manually convert "'.hsc($INPUT->str('db')).'.sqlite" in the meta directory to "'.hsc($INPUT->str('db')).'.sqlite3".<br />
+                        See for info about the conversion '.$this->external_link('http://www.sqlite.org/version3.html').'.', -1
+                    );
                 }
             } else {
                 if(!$DBI->existsPDOSqlite()) {
