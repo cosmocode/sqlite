@@ -30,8 +30,6 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function __construct()
     {
-        dbg_deprecated(SQLiteDB::class);
-
         if (!$this->existsPDOSqlite()) {
             msg('PDO SQLite support missing in this PHP install - The sqlite plugin will not work', -1);
         }
@@ -76,6 +74,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function init($dbname, $updatedir)
     {
+        dbg_deprecated(SQLiteDB::class);
+
         try {
             $this->adapter = new SQLiteDB($dbname, $updatedir, $this);
         } catch (Exception $e) {

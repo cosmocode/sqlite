@@ -8,335 +8,293 @@
 
 use dokuwiki\Form\Form;
 use dokuwiki\Form\InputElement;
+use dokuwiki\plugin\sqlite\QuerySaver;
+use dokuwiki\plugin\sqlite\SQLiteDB;
+use dokuwiki\plugin\sqlite\Tools;
 
-// must be run within Dokuwiki
-if(!defined('DOKU_INC')) die();
 
-class admin_plugin_sqlite extends DokuWiki_Admin_Plugin {
+class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
+{
+    /** @var SQLiteDB */
+    protected $db = null;
 
-    function getMenuSort() {
+    /** @var QuerySaver */
+    protected $querySaver = null;
+
+    /** @inheritdoc */
+    function getMenuSort()
+    {
         return 500;
     }
 
-    function forAdminOnly() {
+    /** @inheritdoc */
+    function forAdminOnly()
+    {
         return true;
     }
 
-    function handle() {
+    /** @inheritdoc */
+    function handle()
+    {
         global $conf;
         global $INPUT;
 
-        if($INPUT->bool('sqlite_rename') && checkSecurityToken()) {
-
-            $path = $conf['metadir'].'/'.$INPUT->str('db');
-            if(io_rename($path.'.sqlite', $path.'.sqlite3')) {
-                msg('Renamed database file succesfull!', 1);
-                //set to new situation
-                $INPUT->set('version', 'sqlite3');
-
-            } else {
-                msg('Renaming database file fails!', -1);
+        // load database if given and security token is valid
+        if ($INPUT->str('db') && checkSecurityToken()) {
+            try {
+                $this->db = new SQLiteDB($INPUT->str('db'), '');
+                $this->querySaver = new QuerySaver($this->db->getDBName());
+            } catch (Exception $e) {
+                msg($e->getMessage(), -1);
+                return;
             }
-        } elseif($INPUT->bool('sqlite_export') && checkSecurityToken()) {
+        }
 
-            /** @var $DBI helper_plugin_sqlite */
-            $DBI        = plugin_load('helper', 'sqlite');
-            $dbname = $INPUT->str('db');
-
-            $dumpfile = $DBI->dumpDatabase($dbname, DOKU_EXT_PDO, true);
-            if ($dumpfile) {
+        $cmd = $INPUT->extract('cmd')->str('cmd');
+        switch ($cmd) {
+            case 'export':
+                $exportfile = $conf['tmpdir'] . '/' . $this->db->getDBName() . '.sql';
+                $this->db->dumpToFile($exportfile);
                 header('Content-Type: text/sql');
-                header('Content-Disposition: attachment; filename="'.$dbname.'.sql";');
-
-                readfile($dumpfile);
+                header('Content-Disposition: attachment; filename="' . $this->db->getDbName() . '.sql";');
+                readfile($exportfile);
+                unlink($exportfile);
                 exit(0);
-            }
-        } elseif($INPUT->bool('sqlite_import') && checkSecurityToken()) {
+            case 'import':
+                $importfile = $_FILES['importfile']['tmp_name'];
 
-            /** @var $DBI helper_plugin_sqlite */
-            $DBI        = plugin_load('helper', 'sqlite');
-            $dbname = $INPUT->str('db');
-            $dumpfile = $_FILES['dumpfile']['tmp_name'];
+                if (empty($importfile)) {
+                    msg($this->getLang('import_no_file'), -1);
+                    return;
+                }
 
-            if (empty($dumpfile)) {
-                msg($this->getLang('import_no_file'), -1);
-                return;
-            }
-
-            if ($DBI->fillDatabaseFromDump($dbname, $dumpfile, true)) {
-                msg($this->getLang('import_success'), 1);
-            }
-        } elseif($INPUT->bool('sqlite_query_save') && checkSecurityToken()) {
-            if($INPUT->str('sql') === '') {
-                msg($this->getLang('validation query_required'), -1);
-                return;
-            }
-            if($INPUT->str('name') === '') {
-                msg($this->getLang('validation query_name_required'), -1);
-                return;
-            }
-            /** @var helper_plugin_sqlite_db $db_helper */
-            $db_helper = $this->loadHelper('sqlite_db');
-            $sqlite_db = $db_helper->getDB();
-            $ok = $sqlite_db->storeEntry('queries', array(
-                'db' => $INPUT->str('db'),
-                'name' => $INPUT->str('name'),
-                'sql' => $INPUT->str('sql')
-            ));
-            if ($ok) {
-                msg($this->getLang('success query_saved'), 1);
-            }
-        } elseif($INPUT->has('sqlite_query_delete') && checkSecurityToken()) {
-            /** @var helper_plugin_sqlite_db $db_helper */
-            $db_helper = $this->loadHelper('sqlite_db');
-            $sqlite_db = $db_helper->getDB();
-
-            $ok = $sqlite_db->query("DELETE FROM queries WHERE id=?;", $INPUT->int('sqlite_query_delete'));
-            if ($ok) {
-                msg($this->getLang('success query_deleted'), 1);
-            }
+                $sql = file_get_contents($importfile);
+                try {
+                    $this->db->exec($sql);
+                    msg($this->getLang('import_success'), 1);
+                } catch (Exception $e) {
+                    msg($e->getMessage(), -1);
+                }
+                break;
+            case 'save_query':
+                $this->querySaver->saveQuery($INPUT->str('name'), $INPUT->str('sql'));
+                break;
+            case 'delete_query':
+                $this->querySaver->deleteQuery($INPUT->str('name'));
+                break;
         }
     }
 
-    function html() {
-        global $ID;
-        global $conf;
+    /** @inheritdoc */
+    function html()
+    {
         global $INPUT;
 
         echo $this->locale_xhtml('intro');
-
-        if($INPUT->has('db') && checkSecurityToken()) {
-
-            echo '<h2>'.$this->getLang('db').' "'.hsc($INPUT->str('db')).'"</h2>';
-            echo '<div class="level2">';
-
-            $sqlcommandform = true;
-            /** @var $DBI helper_plugin_sqlite */
-            $DBI = plugin_load('helper', 'sqlite');
-            if($INPUT->str('version') == 'sqlite2') {
-                if(helper_plugin_sqlite_adapter::isSqlite3db($conf['metadir'].'/'.$INPUT->str('db').'.sqlite')) {
-
-                    msg('This is a database in sqlite3 format.', 2);
-                    msg(
-                        'This plugin needs your database file has the extension ".sqlite3"
-                        instead of ".sqlite" before it will be recognized as sqlite3 database.', 2
-                    );
-                    $action = wl($ID, [
-                            'do'     => 'admin',
-                            'page'   => 'sqlite',
-                            'db'     => $INPUT->str('db'),
-                            'version'=> $INPUT->str('version')
-                        ], false, '&');
-                    $form = new Form(['action' => $action]);
-                    $form->addButton('sqlite_rename', sprintf($this->getLang('rename2to3'), hsc($INPUT->str('db'))))
-                        ->attr('type', 'submit');
-                    print $form->toHTML();
-
-                    if($DBI->existsPDOSqlite()) $sqlcommandform = false;
-
-                } else {
-                    msg(
-                        'Before PDO sqlite can handle this format, it needs a conversion to the sqlite3 format.
-                        Because PHP sqlite extension is no longer supported,
-                        you should manually convert "'.hsc($INPUT->str('db')).'.sqlite" in the meta directory to "'.hsc($INPUT->str('db')).'.sqlite3".<br />
-                        See for info about the conversion '.$this->external_link('http://www.sqlite.org/version3.html').'.', -1
-                    );
-                    $sqlcommandform = false;
-                }
-            } else {
-                if(!$DBI->existsPDOSqlite()) {
-                    $sqlcommandform = false;
-                    msg('A database in sqlite3 format needs the PHP PDO sqlite plugin.', -1);
-                }
-            }
-
-            if($sqlcommandform) {
-                echo '<ul>';
-                echo '<li><div class="li"><a href="'.
-                    wl(
-                        $ID, array(
-                                  'do'     => 'admin',
-                                  'page'   => 'sqlite',
-                                  'db'     => $INPUT->str('db'),
-                                  'version'=> $INPUT->str('version'),
-                                  'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'table\' ORDER BY name',
-                                  'sectok' => getSecurityToken()
-                             )
-                    ).
-                    '">'.$this->getLang('table').'</a></div></li>';
-                echo '<li><div class="li"><a href="'.
-                    wl(
-                        $ID, array(
-                                  'do'     => 'admin',
-                                  'page'   => 'sqlite',
-                                  'db'     => $INPUT->str('db'),
-                                  'version'=> $INPUT->str('version'),
-                                  'sql'    => 'SELECT name,sql FROM sqlite_master WHERE type=\'index\' ORDER BY name',
-                                  'sectok' => getSecurityToken()
-                             )
-                    ).
-                    '">'.$this->getLang('index').'</a></div></li>';
-                echo '<li><div class="li"><a href="'.
-                    wl(
-                        $ID, array(
-                               'do'     => 'admin',
-                               'page'   => 'sqlite',
-                               'db'     => $INPUT->str('db'),
-                               'version'=> $INPUT->str('version'),
-                               'sqlite_export' => '1',
-                               'sectok' => getSecurityToken()
-                           )
-                    ).
-                    '">'.$this->getLang('export').'</a></div></li>';
+        if (!$this->db) return;
 
 
-                $action = wl($ID, [
-                    'do'     => 'admin',
-                    'page'   => 'sqlite',
-                    'db'     => $INPUT->str('db'),
-                    'version'=> $INPUT->str('version')
-                ], false, '&');
-                $form = new Form(['action' => $action, 'enctype' => 'multipart/form-data']);
-                $form->addElement(new InputElement('file', 'dumpfile'));
-                $form->addButton('sqlite_import', $this->getLang('import'));
-                echo '<li>' . $form->toHTML() . '</li>';
-                echo '</ul>';
+        echo '<h2>' . $this->getLang('db') . ' "' . hsc($this->db->getDbName()) . '"</h2>';
+        echo '<div class="level2">';
 
-                $action = wl($ID, [
-                    'do'     => 'admin',
-                    'page'   => 'sqlite',
-                    'db'     => $INPUT->str('db'),
-                    'version'=> $INPUT->str('version')
-                ], false, '&');
-                $form = (new Form(['action' => $action]))->addClass('sqliteplugin');
-                $form->addFieldsetOpen('SQL Command');
-                $form->addTextarea('sql')->addClass('edit')->val(hsc($INPUT->str('sql')));
-                $form->addElement(new InputElement('submit', ''));
-                $form->addTextInput('name', $this->getLang('query_name'));
-                $form->addButton('sqlite_query_save', $this->getLang('save_query'));
-                $form->addFieldsetClose();
-                print $form->toHTML();
+        echo '<div class="commands">';
+        $this->showCommands();
+        $this->showSavedQueries();
+        echo '</div>';
 
-                // List saved queries
-                /** @var helper_plugin_sqlite_db $db_helper */
-                $db_helper = $this->loadHelper('sqlite_db');
-                $sqlite_db = $db_helper->getDB();
-                $res = $sqlite_db->query("SELECT id, name, sql FROM queries WHERE db=?", $INPUT->str('db'));
-                $result = $sqlite_db->res2arr($res);
-                if(count($result) > 0) {
-                    echo '<h3>' . $this->getLang('saved_queries') . '</h3>';
-                    echo '<div>';
-                    echo '<table class="inline">';
-                    echo '<tr>';
-                    echo '<th>name</th>';
-                    echo '<th>sql</th>';
-                    echo '<th></th>';
-                    echo '</tr>';
-                    foreach($result as $row) {
-                        echo '<tr>';
-                        echo '<td>'.hsc($row['name']).'</td>';
-                        $link = wl($ID, array(  'do'=> 'admin',
-                                                'page'=> 'sqlite',
-                                                'db'=> $INPUT->str('db'),
-                                                'version'=> $INPUT->str('version'),
-                                                'sql' => $row['sql'],
-                                                'sectok'=> getSecurityToken()));
-                        echo '<td><a href="'.$link.'">'.hsc($row['sql']).'</a></td>';
+        // query form
+        $form = new Form(['action' => $this->selfLink()]);
+        $form->addClass('sqliteplugin');
+        $form->addFieldsetOpen('SQL Command');
+        $form->addTextarea('sql')->addClass('edit');
+        $form->addButton('submit', $this->getLang('btn_execute'))->attr('type', 'submit');
+        $form->addTextInput('name', $this->getLang('query_name'));
+        $form->addButton('cmd[save_query]', $this->getLang('save_query'))->attr('type', 'submit');
+        $form->addFieldsetClose();
+        echo $form->toHTML();
 
-                        $link = wl($ID, array(  'do'=> 'admin',
-                            'page'=> 'sqlite',
-                            'db'=> $INPUT->str('db'),
-                            'version'=> $INPUT->str('version'),
-                            'sqlite_query_delete' => $row['id'],
-                            'sectok'=> getSecurityToken()));
-                        echo '<td><a href="'.$link.'">delete</a></td>';
-                        echo '</tr>';
-                    }
-                    echo '</table>';
-                    echo '</div>';
-                }
-
-                if($INPUT->has('sql')) {
-                    if(!$DBI->init($INPUT->str('db'), '')) return;
-
-                    print '<h3>Query results</h3>';
-                    $sql = $DBI->SQLstring2array($INPUT->str('sql'));
-                    foreach($sql as $s) {
-                        $s = preg_replace('!^\s*--.*$!m', '', $s);
-                        $s = trim($s);
-                        if(!$s) continue;
-
-                        $time_start = microtime(true);
-
-                        $res = $DBI->query("$s;");
-                        if($res === false) continue;
-
-                        $result = $DBI->res2arr($res);
-
-                        $time_end = microtime(true);
-                        $time     = $time_end - $time_start;
-
-                        $cnt = $DBI->res2count($res);
-                        msg($cnt.' affected rows in '.($time < 0.0001 ? substr($time, 0, 5).substr($time, -3) : substr($time, 0, 7)).' seconds', 1);
-                        if(!$cnt) continue;
-
-                        echo '<div>';
-                        $ths = array_keys($result[0]);
-                        echo '<table class="inline">';
-                        echo '<tr>';
-                        foreach($ths as $th) {
-                            echo '<th>'.hsc($th).'</th>';
-                        }
-                        echo '</tr>';
-                        foreach($result as $row) {
-                            echo '<tr>';
-                            $tds = array_values($row);
-                            foreach($tds as $td) {
-                                if($td === null) $td='␀';
-                                echo '<td>'.hsc($td).'</td>';
-                            }
-                            echo '</tr>';
-                        }
-                        echo '</table>';
-                        echo '</div>';
-                    }
-                }
-
-            }
-            echo '</div>';
-        }
+        // results
+        if ($INPUT->has('sql')) $this->showQueryResults($INPUT->str('sql'));
+        echo '</div>';
     }
 
-    function getTOC() {
+    function getTOC()
+    {
         global $conf;
         global $ID;
 
-        $toc            = array();
-        $fileextensions = array('sqlite2'=> '.sqlite', 'sqlite3'=> '.sqlite3');
+        $toc = array();
+        $fileextensions = array('sqlite2' => '.sqlite', 'sqlite3' => '.sqlite3');
 
-        foreach($fileextensions as $dbformat => $fileextension) {
+        foreach ($fileextensions as $dbformat => $fileextension) {
             $toc[] = array(
-                'link'  => wl($ID, array('do'=> 'admin', 'page'=> 'sqlite')),
-                'title' => $dbformat.':',
+                'link' => wl($ID, array('do' => 'admin', 'page' => 'sqlite')),
+                'title' => $dbformat . ':',
                 'level' => 1,
-                'type'  => 'ul',
+                'type' => 'ul',
             );
 
-            $dbfiles = glob($conf['metadir'].'/*'.$fileextension);
+            $dbfiles = glob($conf['metadir'] . '/*' . $fileextension);
 
-            if(is_array($dbfiles)) foreach($dbfiles as $file) {
-                $db    = basename($file, $fileextension);
+            if (is_array($dbfiles)) foreach ($dbfiles as $file) {
+                $db = basename($file, $fileextension);
                 $toc[] = array(
-                    'link'  => wl($ID, array('do'=> 'admin', 'page'=> 'sqlite', 'db'=> $db, 'version'=> $dbformat, 'sectok'=> getSecurityToken())),
-                    'title' => $this->getLang('db').' '.$db,
+                    'link' => wl($ID, array('do' => 'admin', 'page' => 'sqlite', 'db' => $db, 'version' => $dbformat, 'sectok' => getSecurityToken())),
+                    'title' => $this->getLang('db') . ' ' . $db,
                     'level' => 2,
-                    'type'  => 'ul',
+                    'type' => 'ul',
                 );
             }
         }
 
         return $toc;
     }
-}
 
-// vim:ts=4:sw=4:et:
+    /**
+     * Execute and display the results of the given SQL query
+     *
+     * multiple queries can be given separated by semicolons
+     *
+     * @param string $sql
+     */
+    protected function showQueryResults($sql)
+    {
+        echo '<h3 id="scroll__here">Query results</h3>';
+
+        $sql = Tools::SQLstring2array($sql);
+        foreach ($sql as $s) {
+            $s = preg_replace('!^\s*--.*$!m', '', $s);
+            $s = trim($s);
+            if (!$s) continue;
+
+            try {
+                $time_start = microtime(true);
+                $result = $this->db->queryAll($s);
+                $time_end = microtime(true);
+            } catch (Exception $e) {
+                msg($e->getMessage(), -1);
+                continue;
+            }
+
+            $time = $time_end - $time_start;
+            $cnt = count($result);
+            msg($cnt . ' affected rows in ' . $this->microtimeToSeconds($time) . ' seconds', 1);
+            if (!$cnt) continue;
+
+            echo '<div>';
+            $ths = array_keys($result[0]);
+            echo '<table class="inline">';
+            echo '<tr>';
+            foreach ($ths as $th) {
+                echo '<th>' . hsc($th) . '</th>';
+            }
+            echo '</tr>';
+            foreach ($result as $row) {
+                echo '<tr>';
+                $tds = array_values($row);
+                foreach ($tds as $td) {
+                    if ($td === null) $td = '␀';
+                    echo '<td>' . hsc($td) . '</td>';
+                }
+                echo '</tr>';
+            }
+            echo '</table>';
+            echo '</div>';
+        }
+    }
+
+
+    /**
+     * Convert a microtime() value to a string in seconds
+     *
+     * @param float $time
+     * @return string
+     */
+    protected function microtimeToSeconds($time)
+    {
+        return ($time < 0.0001 ? substr($time, 0, 5) . substr($time, -3) : substr($time, 0, 7));
+    }
+
+    /**
+     * Construct a link to the sqlite admin page with the given additional parameters
+     *
+     * Basically a wrapper around wl() with some defaults
+     *
+     * @param string[] $params
+     * @param bool $form for use in form action?
+     * @return string
+     */
+    protected function selfLink($form = true, $params = [])
+    {
+        global $ID;
+        $params = array_merge(
+            [
+                'do' => 'admin',
+                'page' => 'sqlite',
+                'db' => $this->db ? $this->db->getDBName() : '',
+                'sectok' => getSecurityToken(),
+            ], $params
+        );
+
+        return wl($ID, $params, false, $form ? '&' : '&amp;');
+    }
+
+    /**
+     * Display the standard actions for a database
+     */
+    protected function showCommands()
+    {
+        $commands = [
+            'dbversion' => [
+                'sql' => 'SELECT val FROM opts WHERE opt=\'dbversion\'',
+            ],
+            'table' => [
+                'sql' => 'SELECT name,sql FROM sqlite_master WHERE type=\'table\' ORDER BY name',
+            ],
+            'index' => [
+                'sql' => 'SELECT name,sql FROM sqlite_master WHERE type=\'index\' ORDER BY name',
+            ],
+            'export' => [
+                'cmd' => 'export'
+            ],
+        ];
+
+        // import form
+        $form = new Form(['action' => $this->selfLink(), 'enctype' => 'multipart/form-data', 'method' => 'post']);
+        $form->addElement(new InputElement('file', 'importfile'));
+        $form->addButton('cmd[import]', $this->getLang('import'));
+
+        // output as a list
+        echo '<ul>';
+        foreach ($commands as $label => $command) {
+            echo '<li><div class="li">';
+            echo '<a href="' . $this->selfLink(false, $command) . '">' . $this->getLang($label) . '</a>';
+            echo '</div></li>';
+        }
+        echo '<li><div class="li">';
+        echo $form->toHTML();
+        echo '</div></li>';
+        echo '</ul>';
+    }
+
+    /**
+     * FIXME needs to be cleaned up
+     */
+    public function showSavedQueries()
+    {
+        $queries = $this->querySaver->getQueries();
+        if (!$queries) return;
+
+        echo '<ul>';
+        foreach ($queries as $query) {
+            $link = $this->selfLink(false, ['sql' => $query['sql']]);
+            $del = $this->selfLink(false, ['cmd' => 'delete_query', 'name' => $query['name']]);
+
+            echo '<li><div class="li">';
+            echo '<a href="' . $link . '">' . hsc($query['name']) . '</a>';
+            echo ' [<a href="' . $del . '">' . $this->getLang('delete_query') . '</a>]';
+            echo '</div></li>';
+        }
+        echo '</ul>';
+    }
+}

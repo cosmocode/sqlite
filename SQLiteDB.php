@@ -25,7 +25,7 @@ class SQLiteDB
     /** @var string */
     protected $dbname;
 
-    /** @var \helper_plugin_sqlite
+    /** @var \helper_plugin_sqlite */
     protected $helper;
 
     /**
@@ -44,7 +44,10 @@ class SQLiteDB
 
         // backwards compatibility, circular dependency
         $this->helper = $sqlitehelper;
-        if($this->helper) $this->helper->setAdapter($this);
+        if(!$this->helper) {
+            $this->helper = new \helper_plugin_sqlite();
+        }
+        $this->helper->setAdapter($this);
 
         $this->schemadir = $schemadir;
         $this->dbname = $dbname;
