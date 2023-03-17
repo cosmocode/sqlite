@@ -8,6 +8,7 @@
 
 namespace dokuwiki\plugin\sqlite;
 
+use dokuwiki\Extension\Event;
 
 /**
  * Helpers to access a SQLite Database with automatic schema migration
@@ -92,7 +93,16 @@ class SQLiteDB
     public function query($sql, $parameters = [])
     {
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($parameters);
+        $eventData = [
+            'sql'  => &$sql,
+            'parameters' => &$parameters,
+            'stmt' => $stmt
+        ];
+        $event = new Event('PLUGIN_SQLITE_QUERY_EXECUTE', $eventData);
+        if ($event->advise_before()) {
+            $stmt->execute($parameters);
+        }
+        $event->advise_after();
         return $stmt;
     }
 
@@ -108,8 +118,7 @@ class SQLiteDB
      */
     public function exec($sql, $parameters = [])
     {
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($parameters);
+        $stmt = $this->query($sql, $parameters);
 
         $count = $stmt->rowCount();
         $stmt->closeCursor();
@@ -179,8 +188,7 @@ class SQLiteDB
 
         /** @noinspection SqlResolve */
         $sql = $command . ' INTO "' . $table . '" (' . join(',', $columns) . ') VALUES (' . join(',', $placeholders) . ')';
-        $stm = $this->pdo->prepare($sql);
-        $stm->execute($values);
+        $stm = $this->query($sql, $values);
         $stm->closeCursor();
     }
 
