@@ -74,7 +74,9 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function init($dbname, $updatedir)
     {
-        dbg_deprecated(SQLiteDB::class);
+        if(!DOKU_UNITTEST) { // for now we don't want to trigger the deprecation warning in the tests
+            dbg_deprecated(SQLiteDB::class);
+        }
 
         try {
             $this->adapter = new SQLiteDB($dbname, $updatedir, $this);
@@ -321,7 +323,9 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function SQLstring2array($sql)
     {
-        dbg_deprecated(Tools::class . '::SQLstring2array');
+        if(!DOKU_UNITTEST) { // for now we don't want to trigger the deprecation warning in the tests
+            dbg_deprecated(Tools::class . '::SQLstring2array');
+        }
         return Tools::SQLstring2array($sql);
     }
 
