@@ -336,7 +336,7 @@ class SQLiteDB
                 if ($event->advise_before()) {
                     // standard migration file
                     $sql = file_get_contents($data['file']);
-                    $this->exec($sql);
+                    $this->pdo->exec($sql);
                 } else if (!$event->result) {
                     // advise before returned false, but the result was false
                     throw new \PDOException('Plugin event did not signal success');
