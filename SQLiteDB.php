@@ -69,6 +69,22 @@ class SQLiteDB
         Functions::register($this->pdo);
     }
 
+    /**
+     * Do not serialize the DB connection
+     *
+     * @return array
+     */
+    public function __sleep() {
+        $this->pdo = null;
+        return array_keys(get_object_vars($this));
+    }
+
+    /**
+     * On deserialization, reinit database connection
+     */
+    public function __wakeup() {
+        $this->__construct($this->dbname, $this->schemadir, $this->helper);
+    }
 
     // region public API
 
