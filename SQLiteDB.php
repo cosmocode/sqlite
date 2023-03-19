@@ -45,7 +45,7 @@ class SQLiteDB
 
         // backwards compatibility, circular dependency
         $this->helper = $sqlitehelper;
-        if(!$this->helper) {
+        if (!$this->helper) {
             $this->helper = new \helper_plugin_sqlite();
         }
         $this->helper->setAdapter($this);
@@ -63,7 +63,7 @@ class SQLiteDB
             ]
         );
 
-        if($schemadir !== '') {
+        if ($schemadir !== '') {
             // schema dir is empty, when accessing the DB from Admin interface instead of plugin context
             $this->applyMigrations();
         }
@@ -75,7 +75,8 @@ class SQLiteDB
      *
      * @return array
      */
-    public function __sleep() {
+    public function __sleep()
+    {
         $this->pdo = null;
         return array_keys(get_object_vars($this));
     }
@@ -83,7 +84,8 @@ class SQLiteDB
     /**
      * On deserialization, reinit database connection
      */
-    public function __wakeup() {
+    public function __wakeup()
+    {
         $this->__construct($this->dbname, $this->schemadir, $this->helper);
     }
 
@@ -110,7 +112,7 @@ class SQLiteDB
     {
         $stmt = $this->pdo->prepare($sql);
         $eventData = [
-            'sql'  => &$sql,
+            'sql' => &$sql,
             'parameters' => &$parameters,
             'stmt' => $stmt
         ];
@@ -230,7 +232,9 @@ class SQLiteDB
     public function queryValue($sql, $params = [])
     {
         $result = $this->queryAll($sql, $params);
-        if (is_array($result) && count($result)) return array_values($result[0])[0];
+        if (is_array($result) && count($result)) {
+            return array_values($result[0])[0];
+        }
         return null;
     }
 
@@ -249,7 +253,9 @@ class SQLiteDB
     public function getOpt($opt, $default = null)
     {
         $value = $this->queryValue("SELECT val FROM opts WHERE opt = ?", [$opt]);
-        if ($value === null) return $default;
+        if ($value === null) {
+            return $default;
+        }
         return $value;
     }
 
@@ -294,7 +300,6 @@ class SQLiteDB
         if (!$fp) {
             throw new \Exception('Could not open file ' . $filename . ' for writing');
         }
-
 
         $tables = $this->queryAll('SELECT name,sql FROM sqlite_master WHERE type="table"');
         fwrite($fp, 'BEGIN TRANSACTION;' . "\n");
@@ -372,14 +377,16 @@ class SQLiteDB
                     // standard migration file
                     $sql = file_get_contents($data['file']);
                     $this->pdo->exec($sql);
-                } else if (!$event->result) {
-                    // advise before returned false, but the result was false
-                    throw new \PDOException('Plugin event did not signal success');
+                } else {
+                    if (!$event->result) {
+                        // advise before returned false, but the result was false
+                        throw new \PDOException('Plugin event did not signal success');
+                    }
                 }
                 $this->setOpt('dbversion', $newVersion);
                 $this->pdo->commit();
                 $event->advise_after();
-            } catch (\Exception $e) {
+            } catch(\Exception $e) {
                 // something went wrong, rollback
                 $this->pdo->rollBack();
                 throw $e;
@@ -402,8 +409,8 @@ class SQLiteDB
     {
         try {
             $version = $this->getOpt('dbversion', 0);
-            return (int)$version;
-        } catch (\PDOException $ignored) {
+            return (int) $version;
+        } catch(\PDOException $ignored) {
             // add the opt table - if this fails too, let the exception bubble up
             $sql = "CREATE TABLE IF NOT EXISTS opts (opt TEXT NOT NULL PRIMARY KEY, val NOT NULL DEFAULT '')";
             $this->exec($sql);
@@ -423,7 +430,7 @@ class SQLiteDB
         if (!file_exists($this->schemadir . '/latest.version')) {
             throw new \PDOException('No latest.version in schema dir');
         }
-        return (int)trim(file_get_contents($this->schemadir . '/latest.version'));
+        return (int) trim(file_get_contents($this->schemadir . '/latest.version'));
     }
 
     /**
