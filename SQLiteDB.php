@@ -174,9 +174,11 @@ class SQLiteDB
     public function queryRecord($sql, $params = [])
     {
         $stmt = $this->query($sql, $params);
-        $row = $stmt->fetch();
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
         $stmt->closeCursor();
-        if (is_array($row) && count($row)) return $row;
+        if (is_array($row) && count($row)) {
+            return $row;
+        }
         return null;
     }
 
@@ -186,6 +188,7 @@ class SQLiteDB
      * @param string $table
      * @param array $data
      * @param bool $replace Conflict resolution, replace or ignore
+     * @return array|null Either the inserted row or null if nothing was inserted
      * @throws \PDOException
      */
     public function saveRecord($table, $data, $replace = true)
@@ -203,9 +206,17 @@ class SQLiteDB
         }
 
         /** @noinspection SqlResolve */
-        $sql = $command . ' INTO "' . $table . '" (' . join(',', $columns) . ') VALUES (' . join(',', $placeholders) . ')';
+        $sql = $command . ' INTO "' . $table . '" (' . join(',', $columns) . ') VALUES (' . join(',',
+                $placeholders) . ')';
         $stm = $this->query($sql, $values);
+        $success = $stm->rowCount();
         $stm->closeCursor();
+
+        if ($success) {
+            $sql = 'SELECT * FROM "' . $table . '" WHERE rowid = last_insert_rowid()';
+            return $this->queryRecord($sql);
+        }
+        return null;
     }
 
     /**
