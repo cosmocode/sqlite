@@ -45,7 +45,7 @@ class SQLiteDB
 
         // backwards compatibility, circular dependency
         $this->helper = $sqlitehelper;
-        if(!$this->helper) {
+        if (!$this->helper) {
             $this->helper = new \helper_plugin_sqlite();
         }
         $this->helper->setAdapter($this);
@@ -63,13 +63,31 @@ class SQLiteDB
             ]
         );
 
-        if($schemadir !== '') {
+        if ($schemadir !== '') {
             // schema dir is empty, when accessing the DB from Admin interface instead of plugin context
             $this->applyMigrations();
         }
         Functions::register($this->pdo);
     }
 
+    /**
+     * Do not serialize the DB connection
+     *
+     * @return array
+     */
+    public function __sleep()
+    {
+        $this->pdo = null;
+        return array_keys(get_object_vars($this));
+    }
+
+    /**
+     * On deserialization, reinit database connection
+     */
+    public function __wakeup()
+    {
+        $this->__construct($this->dbname, $this->schemadir, $this->helper);
+    }
 
     // region public API
 
@@ -159,9 +177,11 @@ class SQLiteDB
     public function queryRecord($sql, $params = [])
     {
         $stmt = $this->query($sql, $params);
-        $row = $stmt->fetch();
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
         $stmt->closeCursor();
-        if (is_array($row) && count($row)) return $row;
+        if (is_array($row) && count($row)) {
+            return $row;
+        }
         return null;
     }
 
@@ -171,6 +191,7 @@ class SQLiteDB
      * @param string $table
      * @param array $data
      * @param bool $replace Conflict resolution, replace or ignore
+     * @return array|null Either the inserted row or null if nothing was inserted
      * @throws \PDOException
      */
     public function saveRecord($table, $data, $replace = true)
@@ -188,9 +209,17 @@ class SQLiteDB
         }
 
         /** @noinspection SqlResolve */
-        $sql = $command . ' INTO "' . $table . '" (' . join(',', $columns) . ') VALUES (' . join(',', $placeholders) . ')';
+        $sql = $command . ' INTO "' . $table . '" (' . join(',', $columns) . ') VALUES (' . join(',',
+                $placeholders) . ')';
         $stm = $this->query($sql, $values);
+        $success = $stm->rowCount();
         $stm->closeCursor();
+
+        if ($success) {
+            $sql = 'SELECT * FROM "' . $table . '" WHERE rowid = last_insert_rowid()';
+            return $this->queryRecord($sql);
+        }
+        return null;
     }
 
     /**
@@ -204,7 +233,9 @@ class SQLiteDB
     public function queryValue($sql, $params = [])
     {
         $result = $this->queryAll($sql, $params);
-        if (is_array($result) && count($result)) return array_values($result[0])[0];
+        if (is_array($result) && count($result)) {
+            return array_values($result[0])[0];
+        }
         return null;
     }
 
@@ -223,7 +254,9 @@ class SQLiteDB
     public function getOpt($opt, $default = null)
     {
         $value = $this->queryValue("SELECT val FROM opts WHERE opt = ?", [$opt]);
-        if ($value === null) return $default;
+        if ($value === null) {
+            return $default;
+        }
         return $value;
     }
 
@@ -268,7 +301,6 @@ class SQLiteDB
         if (!$fp) {
             throw new \Exception('Could not open file ' . $filename . ' for writing');
         }
-
 
         $tables = $this->queryAll('SELECT name,sql FROM sqlite_master WHERE type="table"');
         fwrite($fp, 'BEGIN TRANSACTION;' . "\n");
@@ -345,15 +377,17 @@ class SQLiteDB
                 if ($event->advise_before()) {
                     // standard migration file
                     $sql = file_get_contents($data['file']);
-                    $this->exec($sql);
-                } else if (!$event->result) {
-                    // advise before returned false, but the result was false
-                    throw new \PDOException('Plugin event did not signal success');
+                    $this->pdo->exec($sql);
+                } else {
+                    if (!$event->result) {
+                        // advise before returned false, but the result was false
+                        throw new \PDOException('Plugin event did not signal success');
+                    }
                 }
                 $this->setOpt('dbversion', $newVersion);
                 $this->pdo->commit();
                 $event->advise_after();
-            } catch (\Exception $e) {
+            } catch(\Exception $e) {
                 // something went wrong, rollback
                 $this->pdo->rollBack();
                 throw $e;
@@ -376,8 +410,8 @@ class SQLiteDB
     {
         try {
             $version = $this->getOpt('dbversion', 0);
-            return (int)$version;
-        } catch (\PDOException $ignored) {
+            return (int) $version;
+        } catch(\PDOException $ignored) {
             // add the opt table - if this fails too, let the exception bubble up
             $sql = "CREATE TABLE IF NOT EXISTS opts (opt TEXT NOT NULL PRIMARY KEY, val NOT NULL DEFAULT '')";
             $this->exec($sql);
@@ -397,7 +431,7 @@ class SQLiteDB
         if (!file_exists($this->schemadir . '/latest.version')) {
             throw new \PDOException('No latest.version in schema dir');
         }
-        return (int)trim(file_get_contents($this->schemadir . '/latest.version'));
+        return (int) trim(file_get_contents($this->schemadir . '/latest.version'));
     }
 
     /**
