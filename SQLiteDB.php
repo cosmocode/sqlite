@@ -94,6 +94,7 @@ class SQLiteDB
     {
         $stmt = $this->pdo->prepare($sql);
         $eventData = [
+            'sqlitedb' => $this,
             'sql'  => &$sql,
             'parameters' => &$parameters,
             'stmt' => $stmt
