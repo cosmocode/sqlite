@@ -10,6 +10,20 @@ use dokuwiki\plugin\sqlite\SQLiteDB;
 use dokuwiki\plugin\sqlite\Tools;
 
 
+
+/**
+ * For compatibility with previous adapter implementation.
+ */
+if(!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
+class helper_plugin_sqlite_adapter_dummy
+{
+    public function getName() {
+        return DOKU_EXT_PDO;
+    }
+
+    public function setUseNativeAlter($set) {}
+}
+
 /**
  * DokuWiki Plugin sqlite (Helper Component)
  *
@@ -33,6 +47,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
         if (!$this->existsPDOSqlite()) {
             msg('PDO SQLite support missing in this PHP install - The sqlite plugin will not work', -1);
         }
+        $this->adapter = new helper_plugin_sqlite_adapter_dummy();
     }
 
     /**
@@ -74,7 +89,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function init($dbname, $updatedir)
     {
-        if(!DOKU_UNITTEST) { // for now we don't want to trigger the deprecation warning in the tests
+        if(!defined('DOKU_UNITTEST')) { // for now we don't want to trigger the deprecation warning in the tests
             dbg_deprecated(SQLiteDB::class);
         }
 

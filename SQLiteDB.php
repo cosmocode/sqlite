@@ -94,10 +94,22 @@ class SQLiteDB
     /**
      * Direct access to the PDO object
      * @return \PDO
+     *
      */
     public function pdo()
     {
         return $this->pdo;
+    }
+
+    /**
+     * Alias for backwards compatibility.
+     *
+     * @return \PDO
+     *
+     * @deprecated 2023-03-15
+     */
+    public function getDb() {
+        return $this->pdo();
     }
 
     /**
