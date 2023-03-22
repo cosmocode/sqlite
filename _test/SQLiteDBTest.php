@@ -33,7 +33,7 @@ class SQLiteDBTest extends DokuWikiTest
     public function testDB()
     {
         $db = new SQLiteDB('testdb', DOKU_PLUGIN . "sqlite/_test/db");
-        $this->assertInstanceOf(\PDO::class, $db->pdo());
+        $this->assertInstanceOf(\PDO::class, $db->getDb());
     }
 
     public function testQuery()

@@ -118,7 +118,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function create_function($function_name, $callback, $num_args)
     {
-        $this->adapter->pdo()->sqliteCreateFunction($function_name, $callback, $num_args);
+        $this->adapter->getDb()->sqliteCreateFunction($function_name, $callback, $num_args);
     }
 
     // region query and result handling functions
@@ -310,7 +310,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function quote_and_join($vals, $sep = ',')
     {
-        $vals = array_map([$this->adapter->pdo(), 'quote'], $vals);
+        $vals = array_map([$this->adapter->getDb(), 'quote'], $vals);
         return join($sep, $vals);
     }
 
@@ -319,7 +319,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function quote_string($string)
     {
-        return $this->adapter->pdo()->quote($string);
+        return $this->adapter->getDb()->quote($string);
     }
 
     /**
@@ -327,7 +327,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function escape_string($str)
     {
-        return trim($this->adapter->pdo()->quote($str), "'");
+        return trim($this->adapter->getDb()->quote($str), "'");
     }
 
     // endregion
