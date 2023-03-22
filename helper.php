@@ -159,6 +159,14 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
         $args = func_get_args();
         $sql = array_shift($args);
 
+        // check if args contains single array
+        if (isset($args[0]) && is_array($args[0])) {
+            $args = $args[0];
+        }
+
+        // clear the cache
+        $this->data = null;
+
         try {
             return $this->adapter->query($sql, $args);
         } catch (\Exception $e) {
