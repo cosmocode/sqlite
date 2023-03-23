@@ -95,8 +95,7 @@ class SQLiteDB
      * Direct access to the PDO object
      * @return \PDO
      */
-    public function pdo()
-    {
+    public function getDb() {
         return $this->pdo;
     }
 

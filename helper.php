@@ -10,6 +10,20 @@ use dokuwiki\plugin\sqlite\SQLiteDB;
 use dokuwiki\plugin\sqlite\Tools;
 
 
+
+/**
+ * For compatibility with previous adapter implementation.
+ */
+if(!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
+class helper_plugin_sqlite_adapter_dummy
+{
+    public function getName() {
+        return DOKU_EXT_PDO;
+    }
+
+    public function setUseNativeAlter($set) {}
+}
+
 /**
  * DokuWiki Plugin sqlite (Helper Component)
  *
@@ -33,6 +47,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
         if (!$this->existsPDOSqlite()) {
             msg('PDO SQLite support missing in this PHP install - The sqlite plugin will not work', -1);
         }
+        $this->adapter = new helper_plugin_sqlite_adapter_dummy();
     }
 
     /**
@@ -74,7 +89,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function init($dbname, $updatedir)
     {
-        if(!DOKU_UNITTEST) { // for now we don't want to trigger the deprecation warning in the tests
+        if(!defined('DOKU_UNITTEST')) { // for now we don't want to trigger the deprecation warning in the tests
             dbg_deprecated(SQLiteDB::class);
         }
 
@@ -103,7 +118,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function create_function($function_name, $callback, $num_args)
     {
-        $this->adapter->pdo()->sqliteCreateFunction($function_name, $callback, $num_args);
+        $this->adapter->getDb()->sqliteCreateFunction($function_name, $callback, $num_args);
     }
 
     // region query and result handling functions
@@ -143,6 +158,14 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
         // get function arguments
         $args = func_get_args();
         $sql = array_shift($args);
+
+        // check if args contains single array
+        if (isset($args[0]) && is_array($args[0])) {
+            $args = $args[0];
+        }
+
+        // clear the cache
+        $this->data = null;
 
         try {
             return $this->adapter->query($sql, $args);
@@ -287,7 +310,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function quote_and_join($vals, $sep = ',')
     {
-        $vals = array_map([$this->adapter->pdo(), 'quote'], $vals);
+        $vals = array_map([$this->adapter->getDb(), 'quote'], $vals);
         return join($sep, $vals);
     }
 
@@ -296,7 +319,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function quote_string($string)
     {
-        return $this->adapter->pdo()->quote($string);
+        return $this->adapter->getDb()->quote($string);
     }
 
     /**
@@ -304,7 +327,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function escape_string($str)
     {
-        return trim($this->adapter->pdo()->quote($str), "'");
+        return trim($this->adapter->getDb()->quote($str), "'");
     }
 
     // endregion
