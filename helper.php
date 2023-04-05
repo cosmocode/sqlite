@@ -157,22 +157,67 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
     {
         // get function arguments
         $args = func_get_args();
-        $sql = array_shift($args);
-
-        // check if args contains single array
-        if (isset($args[0]) && is_array($args[0])) {
-            $args = $args[0];
-        }
 
         // clear the cache
         $this->data = null;
 
         try {
-            return $this->adapter->query($sql, $args);
+            $sql = $this->prepareSql($args);
+            return $this->adapter->query($sql);
         } catch (\Exception $e) {
             msg('SQLite: ' . $e->getMessage(), -1);
             return false;
         }
+    }
+
+    /**
+     * Prepare a query with the given arguments.
+     *
+     * Takes care of escaping
+     *
+     * @param array $args
+     *    array of arguments:
+     *      - string $sql - the statement
+     *      - arguments...
+     * @return bool|string
+     * @throws Exception
+     */
+    public function prepareSql($args) {
+
+        $sql = trim(array_shift($args));
+        $sql = rtrim($sql, ';');
+
+        if(!$sql) {
+            throw new \Exception('No SQL statement given', -1);
+        }
+
+        $argc = count($args);
+        if($argc > 0 && is_array($args[0])) {
+            $args = $args[0];
+            $argc = count($args);
+        }
+
+        // check number of arguments
+        $qmc = substr_count($sql, '?');
+        if ($argc < $qmc) {
+            throw new \Exception('Not enough arguments passed for statement. ' .
+                'Expected '.$qmc.' got '. $argc.' - '.hsc($sql));
+        } elseif($argc > $qmc) {
+            throw new \Exception('Too much arguments passed for statement. ' .
+                'Expected '.$qmc.' got '. $argc.' - '.hsc($sql));
+        }
+
+        // explode at wildcard, then join again
+        $parts = explode('?', $sql, $argc + 1);
+        $args  = array_map([$this->adapter->getDb(), 'quote'], $args);
+        $sql   = '';
+
+        while(($part = array_shift($parts)) !== null) {
+            $sql .= $part;
+            $sql .= array_shift($args);
+        }
+
+        return $sql;
     }
 
 
