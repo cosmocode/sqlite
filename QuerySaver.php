@@ -2,6 +2,8 @@
 
 namespace dokuwiki\plugin\sqlite;
 
+use dokuwiki\Extension\Event;
+
 class QuerySaver
 {
 
@@ -25,8 +27,18 @@ class QuerySaver
      */
     public function saveQuery($name, $query)
     {
-        $sql = 'INSERT INTO queries (db, name, sql) VALUES (?, ?, ?)';
-        $this->db->exec($sql, [$this->upstream, $name, $query]);
+        $eventData = [
+            'sqlitedb' => $this->db,
+            'upstream'  => $this->upstream,
+            'name' => &$name,
+            'query' => &$query
+        ];
+        $event = new Event('PLUGIN_SQLITE_QUERY_SAVE', $eventData);
+        if ($event->advise_before()) {
+            $sql = 'INSERT INTO queries (db, name, sql) VALUES (?, ?, ?)';
+            $this->db->exec($sql, [$this->upstream, $name, $query]);
+        }
+        $event->advise_after();
     }
 
     /**
@@ -48,8 +60,17 @@ class QuerySaver
      */
     public function deleteQuery($name)
     {
-        $sql = 'DELETE FROM queries WHERE db = ? AND name = ?';
-        $this->db->exec($sql, [$this->upstream, $name]);
+        $eventData = [
+            'sqlitedb' => $this->db,
+            'upstream'  => $this->upstream,
+            'name' => &$name
+        ];
+        $event = new Event('PLUGIN_SQLITE_QUERY_DELETE', $eventData);
+        if ($event->advise_before()) {
+            $sql = 'DELETE FROM queries WHERE db = ? AND name = ?';
+            $this->db->exec($sql, [$this->upstream, $name]);
+        }
+        $event->advise_after();
     }
 
     /**
