@@ -20,63 +20,12 @@ class Functions
      */
     public static function register($pdo)
     {
-        $pdo->sqliteCreateAggregate(
-            'group_concat',
-            [Functions::class, 'GroupConcatStep'],
-            [Functions::class, 'GroupConcatFinalize']
-        );
-
         $pdo->sqliteCreateFunction('GETACCESSLEVEL', [Functions::class, 'getAccessLevel'], 1);
         $pdo->sqliteCreateFunction('PAGEEXISTS', [Functions::class, 'pageExists'], 1);
         $pdo->sqliteCreateFunction('REGEXP', [Functions::class, 'regExp'], 2);
         $pdo->sqliteCreateFunction('CLEANID', 'cleanID', 1);
         $pdo->sqliteCreateFunction('RESOLVEPAGE', [Functions::class, 'resolvePage'], 1);
     }
-
-    /**
-     * Aggregation function for SQLite via PDO
-     *
-     * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
-     *
-     * @param null|array &$context (reference) argument where processed data can be stored
-     * @param int $rownumber current row number
-     * @param string $string column value
-     * @param string $separator separator added between values
-     */
-    public static function GroupConcatStep(&$context, $rownumber, $string, $separator = ',')
-    {
-        if (is_null($context)) {
-            $context = [
-                'sep' => $separator,
-                'data' => []
-            ];
-        }
-
-        $context['data'][] = $string;
-        return $context;
-    }
-
-    /**
-     * Aggregation function for SQLite via PDO
-     *
-     * @link http://devzone.zend.com/article/863-SQLite-Lean-Mean-DB-Machine
-     *
-     * @param null|array &$context (reference) data as collected in step callback
-     * @param int $rownumber number of rows over which the aggregate was performed.
-     * @return null|string
-     */
-    public static function GroupConcatFinalize(&$context, $rownumber)
-    {
-        if (!is_array($context)) {
-            return null;
-        }
-        $context['data'] = array_unique($context['data']);
-        if (empty($context['data'][0])) {
-            return null;
-        }
-        return join($context['sep'], $context['data']);
-    }
-
 
     /**
      * Callback checks the permissions for the current user
