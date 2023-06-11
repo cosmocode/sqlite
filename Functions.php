@@ -37,6 +37,9 @@ class Functions
      */
     public static function getAccessLevel($pageid)
     {
+        global $auth;
+        if(!$auth) return AUTH_DELETE;
+
         static $aclcache = [];
 
         if (isset($aclcache[$pageid])) {
