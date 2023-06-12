@@ -79,6 +79,6 @@ class Tools {
         }
         if($statement) $statements[] = trim($statement);
 
-        return $statements;
+        return array_filter($statements); // remove empty statements
     }
 }
