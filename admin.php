@@ -68,12 +68,17 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
                     return;
                 }
 
-                $sql = file_get_contents($importfile);
+                $sql = Tools::SQLstring2array(file_get_contents($importfile));
                 try {
-                    $this->db->exec($sql);
+                    $this->db->getDb()->beginTransaction();
+                    foreach ($sql as $s) {
+                        $this->db->exec($s);
+                    }
+                    $this->db->getDb()->commit();
                     msg($this->getLang('import_success'), 1);
                 } catch (Exception $e) {
-                    msg($e->getMessage(), -1);
+                    $this->db->getDb()->rollBack();
+                    msg(hsc($e->getMessage()), -1);
                 }
                 break;
             case 'save_query':

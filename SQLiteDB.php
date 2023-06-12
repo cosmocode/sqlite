@@ -95,7 +95,8 @@ class SQLiteDB
      * Direct access to the PDO object
      * @return \PDO
      */
-    public function getDb() {
+    public function getDb()
+    {
         return $this->pdo;
     }
 
@@ -112,7 +113,7 @@ class SQLiteDB
         $stmt = $this->pdo->prepare($sql);
         $eventData = [
             'sqlitedb' => $this,
-            'sql'  => &$sql,
+            'sql' => &$sql,
             'parameters' => &$parameters,
             'stmt' => $stmt
         ];
@@ -301,44 +302,33 @@ class SQLiteDB
             throw new \Exception('Could not open file ' . $filename . ' for writing');
         }
 
-        $tables = $this->queryAll('SELECT name,sql FROM sqlite_master WHERE type="table"');
-        fwrite($fp, 'BEGIN TRANSACTION;' . "\n");
+        $tables = $this->queryAll("SELECT name,sql FROM sqlite_master WHERE type='table'");
+        $indexes = $this->queryAll("SELECT name,sql FROM sqlite_master WHERE type='index'");
 
         foreach ($tables as $table) {
-            fwrite($fp, $table['sql'] . ";\n"); // table definition
+            fwrite($fp, "DROP TABLE IF EXISTS '{$table['name']}';\n");
+        }
 
-            // data as INSERT statements
+        foreach ($tables as $table) {
+            fwrite($fp, $table['sql'] . ";\n");
+        }
+
+        foreach ($tables as $table) {
             $sql = "SELECT * FROM " . $table['name'];
             $res = $this->query($sql);
             while ($row = $res->fetch(\PDO::FETCH_ASSOC)) {
-                $line = 'INSERT INTO ' . $table['name'] . ' VALUES(';
-                foreach ($row as $no_entry => $entry) {
-                    if ($no_entry !== 0) {
-                        $line .= ',';
-                    }
-
-                    if (is_null($entry)) {
-                        $line .= 'NULL';
-                    } elseif (!is_numeric($entry)) {
-                        $line .= $this->pdo->quote($entry);
-                    } else {
-                        // TODO depending on locale extra leading zeros
-                        // are truncated e.g 1.300 (thousand three hunderd)-> 1.3
-                        $line .= $entry;
-                    }
-                }
-                $line .= ');' . "\n";
-                fwrite($fp, $line);
+                $values = join(',', array_map(function ($value) {
+                    if ($value === null) return 'NULL';
+                    return $this->pdo->quote($value);
+                }, $row));
+                fwrite($fp, "INSERT INTO '{$table['name']}' VALUES ({$values});\n");
             }
             $res->closeCursor();
         }
 
-        // indexes
-        $indexes = $this->queryAll("SELECT name,sql FROM sqlite_master WHERE type='index'");
         foreach ($indexes as $index) {
             fwrite($fp, $index['sql'] . ";\n");
         }
-        fwrite($fp, 'COMMIT;' . "\n");
         fclose($fp);
         return $filename;
     }
@@ -375,8 +365,10 @@ class SQLiteDB
             try {
                 if ($event->advise_before()) {
                     // standard migration file
-                    $sql = file_get_contents($data['file']);
-                    $this->pdo->exec($sql);
+                    $sql = Tools::SQLstring2array(file_get_contents($data['file']));
+                    foreach ($sql as $query) {
+                        $this->pdo->exec($query);
+                    }
                 } else {
                     if (!$event->result) {
                         // advise before returned false, but the result was false
@@ -386,7 +378,7 @@ class SQLiteDB
                 $this->setOpt('dbversion', $newVersion);
                 $this->pdo->commit();
                 $event->advise_after();
-            } catch(\Exception $e) {
+            } catch (\Exception $e) {
                 // something went wrong, rollback
                 $this->pdo->rollBack();
                 throw $e;
@@ -409,8 +401,8 @@ class SQLiteDB
     {
         try {
             $version = $this->getOpt('dbversion', 0);
-            return (int) $version;
-        } catch(\PDOException $ignored) {
+            return (int)$version;
+        } catch (\PDOException $ignored) {
             // add the opt table - if this fails too, let the exception bubble up
             $sql = "CREATE TABLE IF NOT EXISTS opts (opt TEXT NOT NULL PRIMARY KEY, val NOT NULL DEFAULT '')";
             $this->exec($sql);
@@ -430,7 +422,7 @@ class SQLiteDB
         if (!file_exists($this->schemadir . '/latest.version')) {
             throw new \PDOException('No latest.version in schema dir');
         }
-        return (int) trim(file_get_contents($this->schemadir . '/latest.version'));
+        return (int)trim(file_get_contents($this->schemadir . '/latest.version'));
     }
 
     /**
