@@ -110,7 +110,12 @@ class SQLiteDB
      */
     public function query($sql, $parameters = [])
     {
-        $stmt = $this->pdo->prepare($sql);
+        // Statement preparation sometime throws ValueErrors instead of PDOExceptions, we streamline here
+        try {
+            $stmt = $this->pdo->prepare($sql);
+        } catch (\Throwable $e) {
+            throw new \PDOException($e->getMessage(), (int)$e->getCode(), $e);
+        }
         $eventData = [
             'sqlitedb' => $this,
             'sql' => &$sql,
