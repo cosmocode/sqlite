@@ -118,7 +118,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function create_function($function_name, $callback, $num_args)
     {
-        $this->adapter->getDb()->sqliteCreateFunction($function_name, $callback, $num_args);
+        $this->adapter->getPdo()->sqliteCreateFunction($function_name, $callback, $num_args);
     }
 
     // region query and result handling functions
@@ -209,7 +209,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
 
         // explode at wildcard, then join again
         $parts = explode('?', $sql, $argc + 1);
-        $args  = array_map([$this->adapter->getDb(), 'quote'], $args);
+        $args  = array_map([$this->adapter->getPdo(), 'quote'], $args);
         $sql   = '';
 
         while(($part = array_shift($parts)) !== null) {
@@ -355,7 +355,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function quote_and_join($vals, $sep = ',')
     {
-        $vals = array_map([$this->adapter->getDb(), 'quote'], $vals);
+        $vals = array_map([$this->adapter->getPdo(), 'quote'], $vals);
         return join($sep, $vals);
     }
 
@@ -364,7 +364,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function quote_string($string)
     {
-        return $this->adapter->getDb()->quote($string);
+        return $this->adapter->getPdo()->quote($string);
     }
 
     /**
@@ -372,7 +372,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function escape_string($str)
     {
-        return trim($this->adapter->getDb()->quote($str), "'");
+        return trim($this->adapter->getPdo()->quote($str), "'");
     }
 
     // endregion
