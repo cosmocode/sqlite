@@ -70,14 +70,14 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
 
                 $sql = Tools::SQLstring2array(file_get_contents($importfile));
                 try {
-                    $this->db->getDb()->beginTransaction();
+                    $this->db->getPdo()->beginTransaction();
                     foreach ($sql as $s) {
                         $this->db->exec($s);
                     }
-                    $this->db->getDb()->commit();
+                    $this->db->getPdo()->commit();
                     msg($this->getLang('import_success'), 1);
                 } catch (Exception $e) {
-                    $this->db->getDb()->rollBack();
+                    $this->db->getPdo()->rollBack();
                     msg(hsc($e->getMessage()), -1);
                 }
                 break;
