@@ -95,7 +95,8 @@ class SQLiteDB
      * Direct access to the PDO object
      * @return \PDO
      */
-    public function getPdo() {
+    public function getPdo()
+    {
         return $this->pdo;
     }
 
@@ -241,6 +242,30 @@ class SQLiteDB
             return array_values($result[0])[0];
         }
         return null;
+    }
+
+    /**
+     * Execute a query that returns a list of key-value pairs
+     *
+     * The first column is used as key, the second as value. Any additional colums are ignored.
+     *
+     * @param string $sql
+     * @param array $params
+     * @return array
+     */
+    public function queryKeyValueList($sql, $params = [])
+    {
+        $result = $this->queryAll($sql, $params);
+        if (!$result) return [];
+        if (count(array_keys($result[0])) != 2) {
+            throw new \RuntimeException('queryKeyValueList expects a query that returns exactly two columns');
+        }
+        [$key, $val] = array_keys($result[0]);
+
+        return array_combine(
+            array_column($result, $key),
+            array_column($result, $val)
+        );
     }
 
     // endregion

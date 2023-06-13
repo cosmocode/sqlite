@@ -115,4 +115,20 @@ class SQLiteDBTest extends DokuWikiTest
         $this->assertEquals('Classic', $result);
     }
 
+    public function testQueryKeyValueList()
+    {
+        $db = new SQLiteDB('testdb', DOKU_PLUGIN . "sqlite/_test/db");
+
+        // data has not unique keys, last entry should win
+        $sql = "SELECT keyword, value FROM testdata ORDER BY tid";
+        $result = $db->queryKeyValueList($sql);
+        $this->assertArrayHasKey('music', $result);
+        $this->assertEquals('Boring', $result['music']);
+
+        // reverse is actually unique
+        $sql = "SELECT value, keyword FROM testdata";
+        $result = $db->queryKeyValueList($sql);
+        $this->assertArrayHasKey('Boring', $result);
+        $this->assertEquals('music', $result['Classic']);
+    }
 }
