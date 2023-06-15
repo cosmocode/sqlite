@@ -9,6 +9,7 @@
 namespace dokuwiki\plugin\sqlite;
 
 use dokuwiki\Extension\Event;
+use dokuwiki\Logger;
 
 /**
  * Helpers to access a SQLite Database with automatic schema migration
@@ -110,6 +111,8 @@ class SQLiteDB
      */
     public function query($sql, $parameters = [])
     {
+        $start = microtime(true);
+
         // Statement preparation sometime throws ValueErrors instead of PDOExceptions, we streamline here
         try {
             $stmt = $this->pdo->prepare($sql);
@@ -127,6 +130,16 @@ class SQLiteDB
             $stmt->execute($parameters);
         }
         $event->advise_after();
+
+        $time = microtime(true) - $start;
+        if ($time > 0.2) {
+            Logger::debug('[sqlite] slow query:  (' . $time . 's)', [
+                'sql' => $sql,
+                'parameters' => $parameters,
+                'backtrace' => explode("\n", dbg_backtrace())
+            ]);
+        }
+
         return $stmt;
     }
 
