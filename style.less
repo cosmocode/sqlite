@@ -1,0 +1,41 @@
+.plugin_sqlite_admin {
+    div.commands {
+        display: flex;
+
+        ul {
+            flex-basis: 50%;
+        }
+
+        form {
+            input[type=file] {
+                border: none;
+                cursor: pointer;
+                width: 10em;
+
+                &::before {
+                    content: "📁";
+                    font-size: 1.5em;
+                }
+            }
+
+            input[type=file]::file-selector-button {
+                display: none;
+            }
+
+            input[type=file]:invalid + button {
+                display: none;
+            }
+        }
+    }
+
+    form.sqliteplugin {
+        fieldset {
+            width: 80%;
+        }
+
+        textarea.edit {
+            width: 95%;
+            height: 10em;
+        }
+    }
+}

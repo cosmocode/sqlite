@@ -1,10 +1,4 @@
 <?php
-/**
- * DokuWiki Plugin sqlite (Admin Component)
- *
- * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
- * @author  Andreas Gohr <andi@splitbrain.org>
- */
 
 use dokuwiki\Form\Form;
 use dokuwiki\Form\InputElement;
@@ -12,7 +6,12 @@ use dokuwiki\plugin\sqlite\QuerySaver;
 use dokuwiki\plugin\sqlite\SQLiteDB;
 use dokuwiki\plugin\sqlite\Tools;
 
-
+/**
+ * DokuWiki Plugin sqlite (Admin Component)
+ *
+ * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
+ * @author  Andreas Gohr <andi@splitbrain.org>
+ */
 class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
 {
     /** @var SQLiteDB */
@@ -22,19 +21,19 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
     protected $querySaver = null;
 
     /** @inheritdoc */
-    function getMenuSort()
+    public function getMenuSort()
     {
         return 500;
     }
 
     /** @inheritdoc */
-    function forAdminOnly()
+    public function forAdminOnly()
     {
         return true;
     }
 
     /** @inheritdoc */
-    function handle()
+    public function handle()
     {
         global $conf;
         global $INPUT;
@@ -91,35 +90,35 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
     }
 
     /** @inheritdoc */
-    function html()
+    public function html()
     {
         global $INPUT;
 
+        echo '<div class="plugin_sqlite_admin">';
         echo $this->locale_xhtml('intro');
-        if (!$this->db) return;
 
+        if ($this->db) {
+            echo '<h2>' . $this->getLang('db') . ' "' . hsc($this->db->getDbName()) . '"</h2>';
 
-        echo '<h2>' . $this->getLang('db') . ' "' . hsc($this->db->getDbName()) . '"</h2>';
-        echo '<div class="level2">';
+            echo '<div class="commands">';
+            $this->showCommands();
+            $this->showSavedQueries();
+            echo '</div>';
 
-        echo '<div class="commands">';
-        $this->showCommands();
-        $this->showSavedQueries();
-        echo '</div>';
+            // query form
+            $form = new Form(['action' => $this->selfLink()]);
+            $form->addClass('sqliteplugin');
+            $form->addFieldsetOpen('SQL Command');
+            $form->addTextarea('sql')->addClass('edit');
+            $form->addButton('submit', $this->getLang('btn_execute'))->attr('type', 'submit');
+            $form->addTextInput('name', $this->getLang('query_name'));
+            $form->addButton('cmd[save_query]', $this->getLang('save_query'))->attr('type', 'submit');
+            $form->addFieldsetClose();
+            echo $form->toHTML();
 
-        // query form
-        $form = new Form(['action' => $this->selfLink()]);
-        $form->addClass('sqliteplugin');
-        $form->addFieldsetOpen('SQL Command');
-        $form->addTextarea('sql')->addClass('edit');
-        $form->addButton('submit', $this->getLang('btn_execute'))->attr('type', 'submit');
-        $form->addTextInput('name', $this->getLang('query_name'));
-        $form->addButton('cmd[save_query]', $this->getLang('save_query'))->attr('type', 'submit');
-        $form->addFieldsetClose();
-        echo $form->toHTML();
-
-        // results
-        if ($INPUT->has('sql')) $this->showQueryResults($INPUT->str('sql'));
+            // results
+            if ($INPUT->has('sql')) $this->showQueryResults($INPUT->str('sql'));
+        }
         echo '</div>';
     }
 
@@ -167,10 +166,6 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
 
         $sql = Tools::SQLstring2array($sql);
         foreach ($sql as $s) {
-            $s = preg_replace('!^\s*--.*$!m', '', $s);
-            $s = trim($s);
-            if (!$s) continue;
-
             try {
                 $time_start = microtime(true);
                 $result = $this->db->queryAll($s);
@@ -265,7 +260,11 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
 
         // import form
         $form = new Form(['action' => $this->selfLink(), 'enctype' => 'multipart/form-data', 'method' => 'post']);
-        $form->addElement(new InputElement('file', 'importfile'));
+        $form->addElement(
+            (new InputElement('file', 'importfile'))
+                ->attr('required', 'required')
+                ->attr('accept', '.sql')
+        );
         $form->addButton('cmd[import]', $this->getLang('import'));
 
         // output as a list
@@ -282,7 +281,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
     }
 
     /**
-     * FIXME needs to be cleaned up
+     * Display the saved queries for this database
      */
     public function showSavedQueries()
     {

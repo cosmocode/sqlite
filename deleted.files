@@ -9,3 +9,4 @@ classes/adapter_null.php
 classes/adapter_pdosqlite.php
 classes/adapter_sqlite2.php
 classes/
+style.css
