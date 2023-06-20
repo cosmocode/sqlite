@@ -123,33 +123,32 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
         echo '</div>';
     }
 
-    function getTOC()
+    /**
+     * List all available databases in the TOC
+     *
+     * @inheritdoc
+     */
+    public function getTOC()
     {
         global $conf;
         global $ID;
 
-        $toc = array();
-        $fileextensions = array('sqlite2' => '.sqlite', 'sqlite3' => '.sqlite3');
-
-        foreach ($fileextensions as $dbformat => $fileextension) {
+        $toc = [];
+        $toc[] = [
+            'link' => wl($ID, ['do' => 'admin', 'page' => 'sqlite']),
+            'title' => $this->getLang('db') . ':',
+            'level' => 1,
+            'type' => 'ul',
+        ];
+        $dbfiles = glob($conf['metadir'] . '/*.sqlite3');
+        if (is_array($dbfiles)) foreach ($dbfiles as $file) {
+            $db = basename($file, '.sqlite3');
             $toc[] = array(
-                'link' => wl($ID, array('do' => 'admin', 'page' => 'sqlite')),
-                'title' => $dbformat . ':',
-                'level' => 1,
+                'link' => wl($ID, array('do' => 'admin', 'page' => 'sqlite', 'db' => $db, 'sectok' => getSecurityToken())),
+                'title' => $db,
+                'level' => 2,
                 'type' => 'ul',
             );
-
-            $dbfiles = glob($conf['metadir'] . '/*' . $fileextension);
-
-            if (is_array($dbfiles)) foreach ($dbfiles as $file) {
-                $db = basename($file, $fileextension);
-                $toc[] = array(
-                    'link' => wl($ID, array('do' => 'admin', 'page' => 'sqlite', 'db' => $db, 'version' => $dbformat, 'sectok' => getSecurityToken())),
-                    'title' => $this->getLang('db') . ' ' . $db,
-                    'level' => 2,
-                    'type' => 'ul',
-                );
-            }
         }
 
         return $toc;
