@@ -48,6 +48,24 @@ class SQLiteDBTest extends DokuWikiTest
         $stmt->closeCursor();
     }
 
+    public function testParameterHandling()
+    {
+        $db = new SQLiteDB('testdb', DOKU_PLUGIN . "sqlite/_test/db");
+
+        $sql = "SELECT ? AS first, ? AS second, ? AS third";
+
+        $result = $db->queryRecord($sql, ['one', 'two', 'three']);
+        $this->assertEquals(['first' => 'one', 'second' => 'two', 'third' => 'three'], $result);
+
+        $result = $db->queryRecord($sql, 'one', 'two', 'three');
+        $this->assertEquals(['first' => 'one', 'second' => 'two', 'third' => 'three'], $result);
+
+        $sql = "SELECT :first AS first, :second AS second, :third AS third";
+
+        $result = $db->queryRecord($sql, ['first' => 'one', 'second' => 'two', 'third' => 'three']);
+        $this->assertEquals(['first' => 'one', 'second' => 'two', 'third' => 'three'], $result);
+    }
+
     public function testExec()
     {
         $db = new SQLiteDB('testdb', DOKU_PLUGIN . "sqlite/_test/db");

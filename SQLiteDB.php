@@ -105,13 +105,15 @@ class SQLiteDB
      * Execute a statement and return it
      *
      * @param string $sql
-     * @param array $parameters
+     * @param ...mixed|array $parameters
      * @return \PDOStatement Be sure to close the cursor yourself
      * @throws \PDOException
      */
-    public function query($sql, $parameters = [])
+    public function query($sql, ...$parameters)
     {
         $start = microtime(true);
+
+        if($parameters && is_array($parameters[0])) $parameters = $parameters[0];
 
         // Statement preparation sometime throws ValueErrors instead of PDOExceptions, we streamline here
         try {
@@ -149,13 +151,13 @@ class SQLiteDB
      * Returns the last insert ID on INSERTs or the number of affected rows
      *
      * @param string $sql
-     * @param array $parameters
+     * @param ...mixed|array $parameters
      * @return int
      * @throws \PDOException
      */
-    public function exec($sql, $parameters = [])
+    public function exec($sql, ...$parameters)
     {
-        $stmt = $this->query($sql, $parameters);
+        $stmt = $this->query($sql, ...$parameters);
 
         $count = $stmt->rowCount();
         $stmt->closeCursor();
@@ -172,13 +174,13 @@ class SQLiteDB
      * Returns all data
      *
      * @param string $sql
-     * @param array $params
+     * @param ...mixed|array $params
      * @return array
      * @throws \PDOException
      */
-    public function queryAll($sql, $params = [])
+    public function queryAll($sql, ...$params)
     {
-        $stmt = $this->query($sql, $params);
+        $stmt = $this->query($sql, ...$params);
         $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         $stmt->closeCursor();
         return $data;
@@ -188,13 +190,13 @@ class SQLiteDB
      * Query one single row
      *
      * @param string $sql
-     * @param array $params
+     * @param ...mixed|array $params
      * @return array|null
      * @throws \PDOException
      */
-    public function queryRecord($sql, $params = [])
+    public function queryRecord($sql, ...$params)
     {
-        $stmt = $this->query($sql, $params);
+        $stmt = $this->query($sql, ...$params);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
         $stmt->closeCursor();
         if (is_array($row) && count($row)) {
@@ -244,13 +246,13 @@ class SQLiteDB
      * Execute a query that returns a single value
      *
      * @param string $sql
-     * @param array $params
+     * @param ...mixed|array $params
      * @return mixed|null
      * @throws \PDOException
      */
-    public function queryValue($sql, $params = [])
+    public function queryValue($sql, ...$params)
     {
-        $result = $this->queryAll($sql, $params);
+        $result = $this->queryAll($sql, ...$params);
         if (is_array($result) && count($result)) {
             return array_values($result[0])[0];
         }
@@ -263,12 +265,12 @@ class SQLiteDB
      * The first column is used as key, the second as value. Any additional colums are ignored.
      *
      * @param string $sql
-     * @param array $params
+     * @param ...mixed|array $params
      * @return array
      */
-    public function queryKeyValueList($sql, $params = [])
+    public function queryKeyValueList($sql, ...$params)
     {
-        $result = $this->queryAll($sql, $params);
+        $result = $this->queryAll($sql, ...$params);
         if (!$result) return [];
         if (count(array_keys($result[0])) != 2) {
             throw new \RuntimeException('queryKeyValueList expects a query that returns exactly two columns');
