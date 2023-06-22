@@ -1,92 +1,79 @@
 <?php
+
+/**
+ * @noinspection SqlNoDataSourceInspection
+ * @noinspection SqlDialectInspection
+ * @noinspection PhpComposerExtensionStubsInspection
+ */
+
+use dokuwiki\plugin\sqlite\SQLiteDB;
+use dokuwiki\plugin\sqlite\Tools;
+
+
+
+/**
+ * For compatibility with previous adapter implementation.
+ */
+if(!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
+class helper_plugin_sqlite_adapter_dummy
+{
+    public function getName() {
+        return DOKU_EXT_PDO;
+    }
+
+    public function setUseNativeAlter($set) {}
+}
+
 /**
  * DokuWiki Plugin sqlite (Helper Component)
  *
  * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
  * @author  Andreas Gohr <gohr@cosmocode.de>
+ * @deprecated 2023-03-15
  */
-
-// must be run within Dokuwiki
-if(!defined('DOKU_INC')) die();
-
-if(!defined('DOKU_EXT_SQLITE')) define('DOKU_EXT_SQLITE', 'sqlite');
-if(!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
-if(!defined('DOKU_EXT_NULL')) define('DOKU_EXT_NULL', 'null');
-
-require_once(DOKU_PLUGIN.'sqlite/classes/adapter.php');
-
-/**
- * Class helper_plugin_sqlite
- */
-class helper_plugin_sqlite extends DokuWiki_Plugin {
-    /** @var helper_plugin_sqlite_adapter_pdosqlite|helper_plugin_sqlite_adapter|\helper_plugin_sqlite_adapter_sqlite2|null  */
+class helper_plugin_sqlite extends DokuWiki_Plugin
+{
+    /** @var SQLiteDB|null */
     protected $adapter = null;
 
+    /** @var array result cache */
+    protected $data;
+
     /**
-     * @return helper_plugin_sqlite_adapter_pdosqlite|helper_plugin_sqlite_adapter|\helper_plugin_sqlite_adapter_sqlite2|null
+     * constructor
      */
-    public function getAdapter() {
+    public function __construct()
+    {
+        if (!$this->existsPDOSqlite()) {
+            msg('PDO SQLite support missing in this PHP install - The sqlite plugin will not work', -1);
+        }
+        $this->adapter = new helper_plugin_sqlite_adapter_dummy();
+    }
+
+    /**
+     * Get the current Adapter
+     * @return SQLiteDB|null
+     */
+    public function getAdapter()
+    {
         return $this->adapter;
     }
 
     /**
      * Keep separate instances for every call to keep database connections
      */
-    public function isSingleton() {
+    public function isSingleton()
+    {
         return false;
-    }
-
-    /**
-     * constructor
-     */
-    public function __construct() {
-
-        if(!$this->adapter) {
-            if($this->existsPDOSqlite() && empty($_ENV['SQLITE_SKIP_PDO'])) {
-                require_once(DOKU_PLUGIN.'sqlite/classes/adapter_pdosqlite.php');
-                $this->adapter = new helper_plugin_sqlite_adapter_pdosqlite();
-            }
-        }
-
-        if(!$this->adapter) {
-            if($this->existsSqlite2()) {
-                require_once(DOKU_PLUGIN.'sqlite/classes/adapter_sqlite2.php');
-                $this->adapter = new helper_plugin_sqlite_adapter_sqlite2();
-            }
-        }
-
-        if(!$this->adapter) {
-            msg('SQLite & PDO SQLite support missing in this PHP install - The sqlite plugin will not work', -1);
-        }
-    }
-
-    /**
-     * check availabilty of PHPs sqlite extension (for sqlite2 support)
-     */
-    public function existsSqlite2() {
-        if(!extension_loaded('sqlite')) {
-            $prefix = (PHP_SHLIB_SUFFIX === 'dll') ? 'php_' : '';
-            if(function_exists('dl')) @dl($prefix.'sqlite.'.PHP_SHLIB_SUFFIX);
-        }
-
-        return function_exists('sqlite_open');
     }
 
     /**
      * check availabilty of PHP PDO sqlite3
      */
-    public function existsPDOSqlite() {
-        if(!extension_loaded('pdo_sqlite')) {
-            $prefix = (PHP_SHLIB_SUFFIX === 'dll') ? 'php_' : '';
-            if(function_exists('dl')) @dl($prefix.'pdo_sqlite.'.PHP_SHLIB_SUFFIX);
-        }
-
-        if(class_exists('pdo')) {
-            foreach(PDO::getAvailableDrivers() as $driver) {
-                if($driver == 'sqlite') {
-                    return true;
-                }
-            }
+    public function existsPDOSqlite()
+    {
+        if (class_exists('pdo')) {
+            return in_array('sqlite', \PDO::getAvailableDrivers());
         }
         return false;
     }
@@ -100,428 +87,41 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      * @param string $updatedir - Database update infos
      * @return bool
      */
-    public function init($dbname, $updatedir) {
-        $init = null; // set by initdb()
-        if( !$this->adapter or !$this->adapter->initdb($dbname, $init) ){
-            require_once(DOKU_PLUGIN.'sqlite/classes/adapter_null.php');
-            $this->adapter = new helper_plugin_sqlite_adapter_null();
+    public function init($dbname, $updatedir)
+    {
+        if(!defined('DOKU_UNITTEST')) { // for now we don't want to trigger the deprecation warning in the tests
+            dbg_deprecated(SQLiteDB::class);
+        }
+
+        try {
+            $this->adapter = new SQLiteDB($dbname, $updatedir, $this);
+        } catch (Exception $e) {
+            msg('SQLite: ' . $e->getMessage(), -1);
             return false;
-        }
-
-        $this->create_function('GETACCESSLEVEL', array($this, '_getAccessLevel'), 1);
-        $this->create_function('PAGEEXISTS', array($this, '_pageexists'), 1);
-        $this->create_function('REGEXP', array($this, '_regexp'), 2);
-        $this->create_function('CLEANID', 'cleanID', 1);
-        $this->create_function('RESOLVEPAGE', array($this, '_resolvePage'), 1);
-
-        return $this->_updatedb($init, $updatedir);
-    }
-
-    /**
-     * Return the current Database Version
-     */
-    private function _currentDBversion() {
-        $sql = "SELECT val FROM opts WHERE opt = 'dbversion';";
-        $res = $this->query($sql);
-        if(!$res) return false;
-        $row = $this->res2row($res, 0);
-        return (int) $row['val'];
-    }
-
-    /**
-     * Update the database if needed
-     *
-     * @param bool   $init      - true if this is a new database to initialize
-     * @param string $updatedir - Database update infos
-     * @return bool
-     */
-    private function _updatedb($init, $updatedir) {
-        if($init) {
-            $current = 0;
-        } else {
-            $current = $this->_currentDBversion();
-            if($current === false) {
-                msg("SQLite: no DB version found. '".$this->adapter->getDbname()."' DB probably broken.", -1);
-                return false;
-            }
-        }
-
-        // in case of init, add versioning table
-        if($init) {
-            if(!$this->_runupdatefile(dirname(__FILE__).'/db.sql', 0)) {
-                msg("SQLite: '".$this->adapter->getDbname()."' database upgrade failed for version ", -1);
-                return false;
-            }
-        }
-
-        $latest = (int) trim(io_readFile($updatedir.'/latest.version'));
-
-        // all up to date?
-        if($current >= $latest) return true;
-        for($i = $current + 1; $i <= $latest; $i++) {
-            $file = sprintf($updatedir.'/update%04d.sql', $i);
-            if(file_exists($file)) {
-                // prepare Event data
-                $data = array(
-                    'from' => $current,
-                    'to' => $i,
-                    'file' => &$file,
-                    'sqlite' => $this
-                );
-                $event = new Doku_Event('PLUGIN_SQLITE_DATABASE_UPGRADE', $data);
-                if($event->advise_before()) {
-                    // execute the migration
-                    if(!$this->_runupdatefile($file, $i)) {
-                        msg("SQLite: '".$this->adapter->getDbname()."' database upgrade failed for version ".$i, -1);
-                        return false;
-                    }
-                } else {
-                    if($event->result) {
-                        $this->query("INSERT OR REPLACE INTO opts (val,opt) VALUES (?,'dbversion')", $i);
-                    } else {
-                        return false;
-                    }
-                }
-                $event->advise_after();
-
-            } else {
-                msg("SQLite: update file $file not found, skipped.", -1);
-            }
         }
         return true;
     }
 
     /**
-     * Updates the database structure using the given file to
-     * the given version.
+     * This is called from the adapter itself for backwards compatibility
+     *
+     * @param SQLiteDB $adapter
+     * @return void
      */
-    private function _runupdatefile($file, $version) {
-        if(!file_exists($file)) {
-            msg("SQLite: Failed to find DB update file $file");
-            return false;
-        }
-        $sql = io_readFile($file, false);
-
-        $sql = $this->SQLstring2array($sql);
-        array_unshift($sql, 'BEGIN TRANSACTION');
-        array_push($sql, "INSERT OR REPLACE INTO opts (val,opt) VALUES ($version,'dbversion')");
-        array_push($sql, "COMMIT TRANSACTION");
-
-        if(!$this->doTransaction($sql)) {
-            return false;
-        }
-        return ($version == $this->_currentDBversion());
-    }
-
-    /**
-     * Callback checks the permissions for the current user
-     *
-     * This function is registered as a SQL function named GETACCESSLEVEL
-     *
-     * @param  string $pageid page ID (needs to be resolved and cleaned)
-     * @return int permission level
-     */
-    public function _getAccessLevel($pageid) {
-        static $aclcache = array();
-
-        if(isset($aclcache[$pageid])) {
-            return $aclcache[$pageid];
-        }
-
-        if(isHiddenPage($pageid)) {
-            $acl = AUTH_NONE;
-        } else {
-            $acl = auth_quickaclcheck($pageid);
-        }
-        $aclcache[$pageid] = $acl;
-        return $acl;
-    }
-
-    /**
-     * Wrapper around page_exists() with static caching
-     *
-     * This function is registered as a SQL function named PAGEEXISTS
-     *
-     * @param string $pageid
-     * @return int 0|1
-     */
-    public function _pageexists($pageid) {
-        static $cache = array();
-        if(!isset($cache[$pageid])) {
-            $cache[$pageid] = page_exists($pageid);
-
-        }
-        return (int) $cache[$pageid];
-    }
-
-    /**
-     * Match a regular expression against a value
-     *
-     * This function is registered as a SQL function named REGEXP
-     *
-     * @param string $regexp
-     * @param string $value
-     * @return bool
-     */
-    public function _regexp($regexp, $value) {
-        $regexp = addcslashes($regexp, '/');
-        return (bool) preg_match('/'.$regexp.'/u', $value);
-    }
-
-    /**
-     * Resolves a page ID (relative namespaces, plurals etc)
-     *
-     * This function is registered as a SQL function named RESOLVEPAGE
-     *
-     * @param string $page The page ID to resolve
-     * @param string $context The page ID (not namespace!) to resolve the page with
-     * @return null|string
-     */
-    public function _resolvePage($page, $context) {
-        if(is_null($page)) return null;
-        if(is_null($context)) return cleanID($page);
-
-        $ns = getNS($context);
-        resolve_pageid($ns, $page, $exists);
-        return $page;
-    }
-
-    /**
-     * Split sql queries on semicolons, unless when semicolons are quoted
-     *
-     * @param string $sql
-     * @return array sql queries
-     */
-    public function SQLstring2array($sql) {
-        $statements = array();
-        $len = strlen($sql);
-
-        // Simple state machine to "parse" sql into single statements
-        $in_str = false;
-        $in_com = false;
-        $statement = '';
-        for($i=0; $i<$len; $i++){
-            $prev = $i ? $sql[$i-1] : "\n";
-            $char = $sql[$i];
-            $next = $i < ($len - 1) ? $sql[$i+1] : '';
-
-            // in comment? ignore everything until line end
-            if($in_com){
-                if($char == "\n"){
-                    $in_com = false;
-                }
-                continue;
-            }
-
-            // handle strings
-            if($in_str){
-                if($char == "'"){
-                    if($next == "'"){
-                        // current char is an escape for the next
-                        $statement .= $char . $next;
-                        $i++;
-                        continue;
-                    }else{
-                        // end of string
-                        $statement .= $char;
-                        $in_str = false;
-                        continue;
-                    }
-                }
-                // still in string
-                $statement .= $char;
-                continue;
-            }
-
-            // new comment?
-            if($char == '-' && $next == '-' && $prev == "\n"){
-                $in_com = true;
-                continue;
-            }
-
-            // new string?
-            if($char == "'"){
-                $in_str = true;
-                $statement .= $char;
-                continue;
-            }
-
-            // the real delimiter
-            if($char == ';'){
-                $statements[] = trim($statement);
-                $statement = '';
-                continue;
-            }
-
-            // some standard query stuff
-            $statement .= $char;
-        }
-        if($statement) $statements[] = trim($statement);
-
-        return $statements;
-    }
-
-    /**
-     * @param array $sql queries without terminating semicolon
-     * @param bool  $sqlpreparing
-     * @return bool
-     */
-    public function doTransaction($sql, $sqlpreparing = true) {
-        foreach($sql as $s) {
-            $s = preg_replace('!^\s*--.*$!m', '', $s);
-            $s = trim($s);
-            if(!$s) continue;
-
-            if($sqlpreparing) {
-                $res = $this->query("$s;");
-            } else {
-                $res = $this->adapter->executeQuery("$s;");
-            }
-            if($res === false) {
-                //TODO check rollback for sqlite PDO
-                if($this->adapter->getName() == DOKU_EXT_SQLITE) {
-                    $this->query('ROLLBACK TRANSACTION');
-                } else {
-                    $err = $this->adapter->getDb()->errorInfo();
-                    msg($err[0].' '.$err[1].' '.$err[2].':<br /><pre>'.hsc($s).'</pre>', -1);
-                }
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Dump db into a file in meta directory
-     *
-     */
-    public function dumpDatabase($dbname, $from = DOKU_EXT_SQLITE) {
-        global $conf;
-        $adapterDumpDb = null;
-        //connect to desired database
-        if($this->adapter->getName() == $from) {
-            $adapterDumpDb =& $this->adapter;
-        } else {
-            if($from == DOKU_EXT_SQLITE) {
-                //TODO test connecting to sqlite2 database
-                if($this->existsSqlite2()) {
-                    require_once(DOKU_PLUGIN.'sqlite/classes/adapter_sqlite2.php');
-                    $adapterDumpDb = new helper_plugin_sqlite_adapter_sqlite2();
-                } else {
-                    msg('PHP Sqlite Extension(needed for sqlite2) not available, database "'.hsc($dbname).'" is not dumped to file.');
-                    return false;
-                }
-            }
-        }
-        if($adapterDumpDb === null) {
-            msg('No adapter loaded');
-            return false;
-        }
-        $init = false;
-        if(!$adapterDumpDb->initdb($dbname, $init)) {
-            msg('Opening database fails.', -1);
-            return false;
-        }
-
-        $res    = $adapterDumpDb->query(array("SELECT name,sql FROM sqlite_master WHERE type='table'"));
-        $tables = $adapterDumpDb->res2arr($res);
-
-        $filename = $conf['metadir'].'/dumpfile_'.$dbname.'.sql';
-        if($fp = fopen($filename, 'w')) {
-
-            fwrite($fp, 'BEGIN TRANSACTION;'."\n");
-
-            foreach($tables as $table) {
-
-                fwrite($fp, $table['sql'].";\n");
-
-                $sql = "SELECT * FROM ".$table['name'];
-                $res = $adapterDumpDb->query(array($sql));
-
-                while($row = $adapterDumpDb->res_fetch_array($res)) {
-
-                    $line = 'INSERT INTO '.$table['name'].' VALUES(';
-                    foreach($row as $no_entry => $entry) {
-                        if($no_entry !== 0) {
-                            $line .= ',';
-                        }
-
-                        if(is_null($entry)) {
-                            $line .= 'NULL';
-                        } elseif(!is_numeric($entry)) {
-                            $line .= $adapterDumpDb->quote_string($entry);
-                        } else {
-                            //TODO depending on locale extra leading zeros are truncated e.g 1.300 (thousand three hunderd)-> 1.3
-                            $line .= $entry;
-                        }
-                    }
-                    $line .= ');'."\n";
-
-                    fwrite($fp, $line);
-                }
-            }
-
-            $res     = $adapterDumpDb->query(array("SELECT name,sql FROM sqlite_master WHERE type='index'"));
-            $indexes = $adapterDumpDb->res2arr($res);
-            foreach($indexes as $index) {
-                fwrite($fp, $index['sql'].";\n");
-            }
-
-            fwrite($fp, 'COMMIT;'."\n");
-
-            fclose($fp);
-            return $filename;
-        } else {
-            msg('Dumping "'.hsc($dbname).'" has failed. Could not open '.$filename);
-            return false;
-        }
-    }
-
-    /**
-     * Read $dumpfile and try to add it to database.
-     * A existing database is backuped first as e.g. dbname.copy2.sqlite3
-     *
-     * @param string $dbname
-     * @param string $dumpfile
-     * @return bool true on succes
-     */
-    public function fillDatabaseFromDump($dbname, $dumpfile) {
-        global $conf;
-        //backup existing stuff
-        $dbf    = $conf['metadir'].'/'.$dbname;
-        $dbext  = $this->adapter->getFileextension();
-        $dbfile = $dbf.$dbext;
-        if(@file_exists($dbfile)) {
-
-            $i            = 0;
-            $backupdbfile = $dbfile;
-            do {
-                $i++;
-                $backupdbfile = $dbf.".copy$i".$dbext;
-            } while(@file_exists($backupdbfile));
-
-            io_rename($dbfile, $backupdbfile);
-        }
-
-        $init = false;
-        if(!$this->adapter->initdb($dbname, $init, $sqliteupgrade = true)) {
-            msg('Initialize db fails');
-            return false;
-        }
-
-        $sql = io_readFile($dumpfile, false);
-        $sql = $this->SQLstring2array($sql);
-
-        //skip preparing, because it interprets question marks as placeholders.
-        return $this->doTransaction($sql, $sqlpreparing = false);
+    function setAdapter($adapter)
+    {
+        $this->adapter = $adapter;
     }
 
     /**
      * Registers a User Defined Function for use in SQL statements
      */
-    public function create_function($function_name, $callback, $num_args) {
-        $this->adapter->create_function($function_name, $callback, $num_args);
+    public function create_function($function_name, $callback, $num_args)
+    {
+        $this->adapter->getPdo()->sqliteCreateFunction($function_name, $callback, $num_args);
     }
+
+    // region query and result handling functions
 
     /**
      * Convenience function to run an INSERT OR REPLACE operation
@@ -531,16 +131,19 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      *
      * @param string $table the table the entry should be saved to (will not be escaped)
      * @param array $entry A simple key-value pair array (only values will be escaped)
-     * @return bool|SQLiteResult
+     * @return bool
      */
-    public function storeEntry($table, $entry) {
-        $keys = join(',', array_keys($entry));
-        $vals = join(',', array_fill(0,count($entry),'?'));
+    public function storeEntry($table, $entry)
+    {
+        try {
+            $this->adapter->saveRecord($table, $entry);
+        } catch (\Exception $e) {
+            msg('SQLite: ' . $e->getMessage(), -1);
+            return false;
+        }
 
-        $sql = "INSERT OR REPLACE INTO $table ($keys) VALUES ($vals)";
-        return $this->query($sql, array_values($entry));
+        return true;
     }
-
 
     /**
      * Execute a query with the given parameters.
@@ -549,36 +152,74 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      *
      *
      * @param string ...$args - the arguments of query(), the first is the sql and others are values
-     * @return bool|\SQLiteResult
      */
-    public function query() {
+    public function query()
+    {
         // get function arguments
         $args = func_get_args();
 
-        return $this->adapter->query($args);
+        // clear the cache
+        $this->data = null;
+
+        try {
+            $sql = $this->prepareSql($args);
+            return $this->adapter->query($sql);
+        } catch (\Exception $e) {
+            msg('SQLite: ' . $e->getMessage(), -1);
+            return false;
+        }
     }
 
     /**
-     * Join the given values and quote them for SQL insertion
+     * Prepare a query with the given arguments.
+     *
+     * Takes care of escaping
+     *
+     * @param array $args
+     *    array of arguments:
+     *      - string $sql - the statement
+     *      - arguments...
+     * @return bool|string
+     * @throws Exception
      */
-    public function quote_and_join($vals, $sep = ',') {
-        return $this->adapter->quote_and_join($vals, $sep);
+    public function prepareSql($args) {
+
+        $sql = trim(array_shift($args));
+        $sql = rtrim($sql, ';');
+
+        if(!$sql) {
+            throw new \Exception('No SQL statement given', -1);
+        }
+
+        $argc = count($args);
+        if($argc > 0 && is_array($args[0])) {
+            $args = $args[0];
+            $argc = count($args);
+        }
+
+        // check number of arguments
+        $qmc = substr_count($sql, '?');
+        if ($argc < $qmc) {
+            throw new \Exception('Not enough arguments passed for statement. ' .
+                'Expected '.$qmc.' got '. $argc.' - '.hsc($sql));
+        } elseif($argc > $qmc) {
+            throw new \Exception('Too much arguments passed for statement. ' .
+                'Expected '.$qmc.' got '. $argc.' - '.hsc($sql));
+        }
+
+        // explode at wildcard, then join again
+        $parts = explode('?', $sql, $argc + 1);
+        $args  = array_map([$this->adapter->getPdo(), 'quote'], $args);
+        $sql   = '';
+
+        while(($part = array_shift($parts)) !== null) {
+            $sql .= $part;
+            $sql .= array_shift($args);
+        }
+
+        return $sql;
     }
 
-    /**
-     * Run sqlite_escape_string() on the given string and surround it
-     * with quotes
-     */
-    public function quote_string($string) {
-        return $this->adapter->quote_string($string);
-    }
-
-    /**
-     * Escape string for sql
-     */
-    public function escape_string($str) {
-        return $this->adapter->escape_string($str);
-    }
 
     /**
      * Closes the result set (and it's cursors)
@@ -588,63 +229,182 @@ class helper_plugin_sqlite extends DokuWiki_Plugin {
      *
      * Also required when not all rows of a result are fetched
      *
-     * @param $res
+     * @param \PDOStatement $res
      * @return bool
      */
-    public function res_close($res){
-        return $this->adapter->res_close($res);
+    public function res_close($res)
+    {
+        if (!$res) return false;
+
+        return $res->closeCursor();
     }
 
     /**
      * Returns a complete result set as array
+     *
+     * @param \PDOStatement $res
+     * @return array
      */
-    public function res2arr($res, $assoc = true) {
-        return $this->adapter->res2arr($res, $assoc);
+    public function res2arr($res, $assoc = true)
+    {
+        if (!$res) return [];
+
+        // this is a bullshit workaround for having res2arr and res2count work on one result
+        if (!$this->data) {
+            $mode = $assoc ? PDO::FETCH_ASSOC : PDO::FETCH_NUM;
+            $this->data = $res->fetchAll($mode);
+        }
+        return $this->data;
     }
 
     /**
-     * Return the wanted row from a given result set as
-     * associative array
+     * Return the next row from the result set as associative array
+     *
+     * @param \PDOStatement $res
+     * @param int $rownum will be ignored
      */
-    public function res2row($res, $rownum = 0) {
-        return $this->adapter->res2row($res, $rownum);
+    public function res2row($res, $rownum = 0)
+    {
+        if (!$res) return false;
+
+        return $res->fetch(\PDO::FETCH_ASSOC);
     }
 
     /**
      * Return the first value from the next row.
+     *
+     * @param \PDOStatement $res
+     * @return mixed
      */
-    public function res2single($res) {
-        return $this->adapter->res2single($res);
+    public function res2single($res)
+    {
+        if (!$res) return false;
+
+        $data = $res->fetch(PDO::FETCH_NUM, PDO::FETCH_ORI_ABS, 0);
+        if (empty($data)) {
+            return false;
+        }
+        return $data[0];
     }
 
     /**
      * fetch the next row as zero indexed array
+     *
+     * @param \PDOStatement $res
+     * @return array|bool
      */
-    public function res_fetch_array($res) {
-        return $this->adapter->res_fetch_array($res);
+    public function res_fetch_array($res)
+    {
+        if (!$res) return false;
+
+        return $res->fetch(PDO::FETCH_NUM);
     }
 
     /**
      * fetch the next row as assocative array
+     *
+     * @param \PDOStatement $res
+     * @return array|bool
      */
-    public function res_fetch_assoc($res) {
-        return $this->adapter->res_fetch_assoc($res);
+    public function res_fetch_assoc($res)
+    {
+        if (!$res) return false;
+
+        return $res->fetch(PDO::FETCH_ASSOC);
     }
 
     /**
      * Count the number of records in result
      *
      * This function is really inperformant in PDO and should be avoided!
+     *
+     * @param \PDOStatement $res
+     * @return int
      */
-    public function res2count($res) {
-        return $this->adapter->res2count($res);
+    public function res2count($res)
+    {
+        if (!$res) return 0;
+
+        // this is a bullshit workaround for having res2arr and res2count work on one result
+        if (!$this->data) {
+            $this->data = $this->res2arr($res);
+        }
+
+        return count($this->data);
     }
 
     /**
      * Count the number of records changed last time
+     *
+     * @param \PDOStatement $res
+     * @return int
      */
-    public function countChanges($res) {
-        return $this->adapter->countChanges($res);
+    public function countChanges($res)
+    {
+        if (!$res) return 0;
+
+        return $res->rowCount();
     }
 
+    // endregion
+
+    // region quoting/escaping functions
+
+    /**
+     * Join the given values and quote them for SQL insertion
+     */
+    public function quote_and_join($vals, $sep = ',')
+    {
+        $vals = array_map([$this->adapter->getPdo(), 'quote'], $vals);
+        return join($sep, $vals);
+    }
+
+    /**
+     * Quotes a string, by escaping it and adding quotes
+     */
+    public function quote_string($string)
+    {
+        return $this->adapter->getPdo()->quote($string);
+    }
+
+    /**
+     * Similar to quote_string, but without the quotes, useful to construct LIKE patterns
+     */
+    public function escape_string($str)
+    {
+        return trim($this->adapter->getPdo()->quote($str), "'");
+    }
+
+    // endregion
+
+    // region speciality functions
+
+    /**
+     * Split sql queries on semicolons, unless when semicolons are quoted
+     *
+     * Usually you don't need this. It's only really needed if you need individual results for
+     * multiple queries. For example in the admin interface.
+     *
+     * @param string $sql
+     * @return array sql queries
+     * @deprecated
+     */
+    public function SQLstring2array($sql)
+    {
+        if(!DOKU_UNITTEST) { // for now we don't want to trigger the deprecation warning in the tests
+            dbg_deprecated(Tools::class . '::SQLstring2array');
+        }
+        return Tools::SQLstring2array($sql);
+    }
+
+    /**
+     * @deprecated needs to be fixed in stuct and structpublish
+     */
+    public function doTransaction($sql, $sqlpreparing = true) {
+        throw new \Exception(
+            'This method seems to never have done what it suggests. Please use the query() function instead.'
+        );
+    }
+
+    // endregion
 }

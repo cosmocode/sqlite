@@ -1,0 +1,12 @@
+# This is a list of files that were present in previous plugin releases
+# but were removed later. An up to date plugin should not have any of
+# the files installed
+
+_test/AbstractTest.php
+_test/Sqlite2Test.php
+classes/adapter.php
+classes/adapter_null.php
+classes/adapter_pdosqlite.php
+classes/adapter_sqlite2.php
+classes/
+style.css
