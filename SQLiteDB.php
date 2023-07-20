@@ -394,6 +394,8 @@ class SQLiteDB
         $currentVersion = $this->currentDbVersion();
         $latestVersion = $this->latestDbVersion();
 
+        if($currentVersion === $latestVersion) return;
+
         for ($newVersion = $currentVersion + 1; $newVersion <= $latestVersion; $newVersion++) {
             $data = [
                 'dbname' => $this->dbname,
