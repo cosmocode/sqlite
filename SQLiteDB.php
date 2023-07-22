@@ -30,6 +30,8 @@ class SQLiteDB
     /** @var \helper_plugin_sqlite */
     protected $helper;
 
+    
+
     /**
      * Constructor
      *
@@ -452,7 +454,6 @@ class SQLiteDB
             // add the opt table - if this fails too, let the exception bubble up
             $sql = "CREATE TABLE IF NOT EXISTS opts (opt TEXT NOT NULL PRIMARY KEY, val NOT NULL DEFAULT '')";
             $this->exec($sql);
-            $this->setOpt('dbversion', 0);
             return 0;
         }
     }
