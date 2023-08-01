@@ -62,9 +62,18 @@ class SQLiteDB
             null,
             null,
             [
-                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_TIMEOUT => 10, // wait for locks up to 10 seconds
             ]
         );
+
+        try {
+            // See https://www.sqlite.org/wal.html
+            $this->exec('PRAGMA journal_mode=WAL');
+        } catch (\Exception $e) {
+            // this is not critical, but we log it as error. FIXME might be degraded to debug later
+            Logger::error('SQLite: Could not set WAL mode.', $e, $e->getFile(), $e->getLine());
+        }
 
         if ($schemadir !== '') {
             // schema dir is empty, when accessing the DB from Admin interface instead of plugin context
