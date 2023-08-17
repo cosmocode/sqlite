@@ -8,7 +8,6 @@
 
 namespace dokuwiki\plugin\sqlite;
 
-use dokuwiki\ErrorHandler;
 use dokuwiki\Extension\Event;
 use dokuwiki\Logger;
 
@@ -460,18 +459,20 @@ class SQLiteDB
             $version = $this->getOpt('dbversion', 0);
             return (int)$version;
         } catch (\PDOException $e) {
-            // temporary logging for #80
-            Logger::error(
-                'SQLite: Could not read dbversion from opt table. Should only happen on new plugin install',
-                [
-                    'dbname' => $this->dbname,
-                    'exception' => get_class($e),
-                    'message' => $e->getMessage(),
-                    'code' => $e->getCode(),
-                ],
-                __FILE__,
-                __LINE__
-            );
+            if (!preg_match('/no such table/', $e->getMessage())) {
+                // if this is not a "no such table" error, there is something wrong see #80
+                Logger::error(
+                    'SQLite: Could not read dbversion from opt table due to unexpected error',
+                    [
+                        'dbname' => $this->dbname,
+                        'exception' => get_class($e),
+                        'message' => $e->getMessage(),
+                        'code' => $e->getCode(),
+                    ],
+                    __FILE__,
+                    __LINE__
+                );
+            }
 
             // add the opt table - if this fails too, let the exception bubble up
             $sql = "CREATE TABLE IF NOT EXISTS opts (opt TEXT NOT NULL PRIMARY KEY, val NOT NULL DEFAULT '')";
