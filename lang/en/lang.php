@@ -10,6 +10,7 @@ $lang['table'] = 'List Tables';
 $lang['btn_execute'] = 'Execute Query';
 
 $lang['export'] = 'Export Database';
+$lang['download'] = 'Download database file';
 $lang['import'] = 'Import Database';
 $lang['import_no_file'] = 'Select file';
 $lang['import_success'] = 'Database imported successfully';
