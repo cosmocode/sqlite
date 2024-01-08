@@ -13,6 +13,7 @@ $lang['table']                 = 'Tabellen anzeigen';
 $lang['rename2to3']            = 'Umbenennen von %s.sqlite zu *.sqlite3';
 $lang['convert2to3']           = 'Konvertiere %s vom Sqlite2 zum Sqlite3-Format';
 $lang['export']                = 'Datenbank exportieren';
+$lang['download']              = 'Datenbank-Datei herunterladen';
 $lang['import']                = 'Datenbank importieren';
 $lang['import_no_file']        = 'Wählen Sie eine Datei aus';
 $lang['import_success']        = 'Datenbank erfolgreich  importiert ';

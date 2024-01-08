@@ -52,7 +52,7 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
         $cmd = $INPUT->extract('cmd')->str('cmd');
         switch ($cmd) {
             case 'export':
-                $exportfile = $conf['tmpdir'] . '/' . $this->db->getDBName() . '.sql';
+                $exportfile = $conf['tmpdir'] . '/' . $this->db->getDbName() . '.sql';
                 $this->db->dumpToFile($exportfile);
                 header('Content-Type: text/sql');
                 header('Content-Disposition: attachment; filename="' . $this->db->getDbName() . '.sql";');
@@ -86,6 +86,12 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
             case 'delete_query':
                 $this->querySaver->deleteQuery($INPUT->str('name'));
                 break;
+            case 'download':
+                $file = $this->db->getDbFile();
+                header('Content-Type: application/vnd.sqlite3');
+                header('Content-Disposition: attachment; filename="' . $this->db->getDbName() . SQLiteDB::FILE_EXTENSION . '"');
+                readfile($file);
+                exit(0);
         }
     }
 
@@ -255,6 +261,9 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
             ],
             'export' => [
                 'cmd' => 'export'
+            ],
+            'download' => [
+                'cmd' => 'download'
             ],
         ];
 
