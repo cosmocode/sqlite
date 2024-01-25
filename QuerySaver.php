@@ -6,7 +6,6 @@ use dokuwiki\Extension\Event;
 
 class QuerySaver
 {
-
     protected $db;
     protected $upstream;
 

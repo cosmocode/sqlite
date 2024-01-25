@@ -16,7 +16,7 @@ use dokuwiki\Logger;
  */
 class SQLiteDB
 {
-    const FILE_EXTENSION = '.sqlite3';
+    public const FILE_EXTENSION = '.sqlite3';
 
     /** @var \PDO */
     protected $pdo;
@@ -254,8 +254,10 @@ class SQLiteDB
         }
 
         /** @noinspection SqlResolve */
-        $sql = $command . ' INTO "' . $table . '" (' . join(',', $columns) . ') VALUES (' . join(',',
-                $placeholders) . ')';
+        $sql = $command . ' INTO "' . $table . '" (' . implode(',', $columns) . ') VALUES (' . implode(
+            ',',
+            $placeholders
+        ) . ')';
         $stm = $this->query($sql, $values);
         $success = $stm->rowCount();
         $stm->closeCursor();
@@ -386,7 +388,7 @@ class SQLiteDB
             $sql = "SELECT * FROM " . $table['name'];
             $res = $this->query($sql);
             while ($row = $res->fetch(\PDO::FETCH_ASSOC)) {
-                $values = join(',', array_map(function ($value) {
+                $values = implode(',', array_map(function ($value) {
                     if ($value === null) return 'NULL';
                     return $this->pdo->quote($value);
                 }, $row));
@@ -430,7 +432,7 @@ class SQLiteDB
                 'sqlite' => $this->helper,
                 'adapter' => $this,
             ];
-            $event = new \Doku_Event('PLUGIN_SQLITE_DATABASE_UPGRADE', $data);
+            $event = new Event('PLUGIN_SQLITE_DATABASE_UPGRADE', $data);
 
             $this->pdo->beginTransaction();
             try {
@@ -440,11 +442,9 @@ class SQLiteDB
                     foreach ($sql as $query) {
                         $this->pdo->exec($query);
                     }
-                } else {
-                    if (!$event->result) {
-                        // advise before returned false, but the result was false
-                        throw new \PDOException('Plugin event did not signal success');
-                    }
+                } elseif (!$event->result) {
+                    // advise before returned false, but the result was false
+                    throw new \PDOException('Plugin event did not signal success');
                 }
                 $this->setOpt('dbversion', $newVersion);
                 $this->pdo->commit();

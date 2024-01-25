@@ -1,9 +1,9 @@
 <?php
+
 /**
  * @noinspection PhpUndefinedMethodInspection
  * @noinspection PhpComposerExtensionStubsInspection
  */
-
 
 namespace dokuwiki\plugin\sqlite;
 
@@ -12,7 +12,6 @@ namespace dokuwiki\plugin\sqlite;
  */
 class Functions
 {
-
     /**
      * Register all standard functions
      *
@@ -22,8 +21,8 @@ class Functions
     {
         $pdo->sqliteCreateAggregate(
             'GROUP_CONCAT_DISTINCT',
-            [Functions::class, 'GroupConcatStep'],
-            [Functions::class, 'GroupConcatFinalize']
+            [Functions::class, 'groupConcatStep'],
+            [Functions::class, 'groupConcatFinalize']
         );
 
         $pdo->sqliteCreateFunction('GETACCESSLEVEL', [Functions::class, 'getAccessLevel'], 1);
@@ -43,7 +42,7 @@ class Functions
      * @param string $string column value
      * @param string $separator separator added between values
      */
-    public static function GroupConcatStep(&$context, $rownumber, $string, $separator = ',')
+    public static function groupConcatStep(&$context, $rownumber, $string, $separator = ',')
     {
         if (is_null($context)) {
             $context = [
@@ -65,7 +64,7 @@ class Functions
      * @param int $rownumber number of rows over which the aggregate was performed.
      * @return null|string
      */
-    public static function GroupConcatFinalize(&$context, $rownumber)
+    public static function groupConcatFinalize(&$context, $rownumber)
     {
         if (!is_array($context)) {
             return null;
@@ -74,7 +73,7 @@ class Functions
         if (empty($context['data'][0])) {
             return null;
         }
-        return join($context['sep'], $context['data']);
+        return implode($context['sep'], $context['data']);
     }
 
 
@@ -119,7 +118,6 @@ class Functions
         static $cache = [];
         if (!isset($cache[$pageid])) {
             $cache[$pageid] = page_exists($pageid);
-
         }
         return (int)$cache[$pageid];
     }
@@ -157,5 +155,4 @@ class Functions
         resolve_pageid($ns, $page, $exists);
         return $page;
     }
-
 }

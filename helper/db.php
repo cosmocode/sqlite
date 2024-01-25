@@ -1,5 +1,7 @@
 <?php
 
+use dokuwiki\Extension\Plugin;
+
 /**
  * DokuWiki Plugin sqlite (Helper Component)
  *
@@ -8,7 +10,7 @@
  */
 
 
-class helper_plugin_sqlite_db extends DokuWiki_Plugin
+class helper_plugin_sqlite_db extends Plugin
 {
     /** @var helper_plugin_sqlite */
     protected $sqlite;
@@ -27,7 +29,6 @@ class helper_plugin_sqlite_db extends DokuWiki_Plugin
      */
     protected function init()
     {
-        /** @var helper_plugin_sqlite $sqlite */
         $this->sqlite = plugin_load('helper', 'sqlite');
 
         // initialize the database connection

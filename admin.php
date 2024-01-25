@@ -1,5 +1,6 @@
 <?php
 
+use dokuwiki\Extension\AdminPlugin;
 use dokuwiki\Form\Form;
 use dokuwiki\Form\InputElement;
 use dokuwiki\plugin\sqlite\QuerySaver;
@@ -12,13 +13,13 @@ use dokuwiki\plugin\sqlite\Tools;
  * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
  * @author  Andreas Gohr <andi@splitbrain.org>
  */
-class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
+class admin_plugin_sqlite extends AdminPlugin
 {
     /** @var SQLiteDB */
-    protected $db = null;
+    protected $db;
 
     /** @var QuerySaver */
-    protected $querySaver = null;
+    protected $querySaver;
 
     /** @inheritdoc */
     public function getMenuSort()
@@ -89,7 +90,10 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
             case 'download':
                 $file = $this->db->getDbFile();
                 header('Content-Type: application/vnd.sqlite3');
-                header('Content-Disposition: attachment; filename="' . $this->db->getDbName() . SQLiteDB::FILE_EXTENSION . '"');
+                header(
+                    'Content-Disposition: attachment; filename="'
+                    . $this->db->getDbName() . SQLiteDB::FILE_EXTENSION . '"'
+                );
                 readfile($file);
                 exit(0);
         }
@@ -148,12 +152,12 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
         $dbfiles = glob($conf['metadir'] . '/*.sqlite3');
         if (is_array($dbfiles)) foreach ($dbfiles as $file) {
             $db = basename($file, '.sqlite3');
-            $toc[] = array(
-                'link' => wl($ID, array('do' => 'admin', 'page' => 'sqlite', 'db' => $db, 'sectok' => getSecurityToken())),
+            $toc[] = [
+                'link' => wl($ID, ['do' => 'admin', 'page' => 'sqlite', 'db' => $db, 'sectok' => getSecurityToken()]),
                 'title' => $db,
                 'level' => 2,
                 'type' => 'ul',
-            );
+            ];
         }
 
         return $toc;
@@ -238,7 +242,8 @@ class admin_plugin_sqlite extends DokuWiki_Admin_Plugin
                 'page' => 'sqlite',
                 'db' => $this->db ? $this->db->getDBName() : '',
                 'sectok' => getSecurityToken(),
-            ], $params
+            ],
+            $params
         );
 
         return wl($ID, $params, false, $form ? '&' : '&amp;');
