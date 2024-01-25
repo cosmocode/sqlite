@@ -41,6 +41,10 @@ class SQLiteDB
      */
     public function __construct($dbname, $schemadir, $sqlitehelper = null)
     {
+        global $plugin_controller;
+        if (!$plugin_controller->isEnabled('sqlite')) {
+            throw new \Exception('SQLite plugin seems to be disabled.');
+        }
         if (!class_exists('pdo') || !in_array('sqlite', \PDO::getAvailableDrivers())) {
             throw new \Exception('SQLite PDO driver not available');
         }
