@@ -6,22 +6,24 @@
  * @noinspection PhpComposerExtensionStubsInspection
  */
 
+use dokuwiki\Extension\Plugin;
 use dokuwiki\plugin\sqlite\SQLiteDB;
 use dokuwiki\plugin\sqlite\Tools;
-
-
 
 /**
  * For compatibility with previous adapter implementation.
  */
-if(!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
+if (!defined('DOKU_EXT_PDO')) define('DOKU_EXT_PDO', 'pdo');
 class helper_plugin_sqlite_adapter_dummy
 {
-    public function getName() {
+    public function getName()
+    {
         return DOKU_EXT_PDO;
     }
 
-    public function setUseNativeAlter($set) {}
+    public function setUseNativeAlter($set)
+    {
+    }
 }
 
 /**
@@ -31,10 +33,10 @@ class helper_plugin_sqlite_adapter_dummy
  * @author  Andreas Gohr <gohr@cosmocode.de>
  * @deprecated 2023-03-15
  */
-class helper_plugin_sqlite extends DokuWiki_Plugin
+class helper_plugin_sqlite extends Plugin
 {
     /** @var SQLiteDB|null */
-    protected $adapter = null;
+    protected $adapter;
 
     /** @var array result cache */
     protected $data;
@@ -89,7 +91,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function init($dbname, $updatedir)
     {
-        if(!defined('DOKU_UNITTEST')) { // for now we don't want to trigger the deprecation warning in the tests
+        if (!defined('DOKU_UNITTEST')) { // for now we don't want to trigger the deprecation warning in the tests
             dbg_deprecated(SQLiteDB::class);
         }
 
@@ -108,7 +110,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      * @param SQLiteDB $adapter
      * @return void
      */
-    function setAdapter($adapter)
+    public function setAdapter($adapter)
     {
         $this->adapter = $adapter;
     }
@@ -182,17 +184,18 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      * @return bool|string
      * @throws Exception
      */
-    public function prepareSql($args) {
+    public function prepareSql($args)
+    {
 
         $sql = trim(array_shift($args));
         $sql = rtrim($sql, ';');
 
-        if(!$sql) {
+        if (!$sql) {
             throw new \Exception('No SQL statement given', -1);
         }
 
         $argc = count($args);
-        if($argc > 0 && is_array($args[0])) {
+        if ($argc > 0 && is_array($args[0])) {
             $args = $args[0];
             $argc = count($args);
         }
@@ -201,10 +204,10 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
         $qmc = substr_count($sql, '?');
         if ($argc < $qmc) {
             throw new \Exception('Not enough arguments passed for statement. ' .
-                'Expected '.$qmc.' got '. $argc.' - '.hsc($sql));
-        } elseif($argc > $qmc) {
+                'Expected ' . $qmc . ' got ' . $argc . ' - ' . hsc($sql));
+        } elseif ($argc > $qmc) {
             throw new \Exception('Too much arguments passed for statement. ' .
-                'Expected '.$qmc.' got '. $argc.' - '.hsc($sql));
+                'Expected ' . $qmc . ' got ' . $argc . ' - ' . hsc($sql));
         }
 
         // explode at wildcard, then join again
@@ -212,7 +215,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
         $args  = array_map([$this->adapter->getPdo(), 'quote'], $args);
         $sql   = '';
 
-        while(($part = array_shift($parts)) !== null) {
+        while (($part = array_shift($parts)) !== null) {
             $sql .= $part;
             $sql .= array_shift($args);
         }
@@ -356,7 +359,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
     public function quote_and_join($vals, $sep = ',')
     {
         $vals = array_map([$this->adapter->getPdo(), 'quote'], $vals);
-        return join($sep, $vals);
+        return implode($sep, $vals);
     }
 
     /**
@@ -391,7 +394,7 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
      */
     public function SQLstring2array($sql)
     {
-        if(!DOKU_UNITTEST) { // for now we don't want to trigger the deprecation warning in the tests
+        if (!DOKU_UNITTEST) { // for now we don't want to trigger the deprecation warning in the tests
             dbg_deprecated(Tools::class . '::SQLstring2array');
         }
         return Tools::SQLstring2array($sql);
@@ -400,7 +403,8 @@ class helper_plugin_sqlite extends DokuWiki_Plugin
     /**
      * @deprecated needs to be fixed in stuct and structpublish
      */
-    public function doTransaction($sql, $sqlpreparing = true) {
+    public function doTransaction($sql, $sqlpreparing = true)
+    {
         throw new \Exception(
             'This method seems to never have done what it suggests. Please use the query() function instead.'
         );

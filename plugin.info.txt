@@ -5,3 +5,4 @@ date   2023-08-17
 name   sqlite plugin
 desc   A helper plugin to easily access a SQLite database
 url    http://www.dokuwiki.org/plugin:sqlite
+minphp 7.3

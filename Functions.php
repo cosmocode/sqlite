@@ -1,9 +1,9 @@
 <?php
+
 /**
  * @noinspection PhpUndefinedMethodInspection
  * @noinspection PhpComposerExtensionStubsInspection
  */
-
 
 namespace dokuwiki\plugin\sqlite;
 
@@ -12,7 +12,6 @@ namespace dokuwiki\plugin\sqlite;
  */
 class Functions
 {
-
     /**
      * Register all standard functions
      *
@@ -74,7 +73,7 @@ class Functions
         if (empty($context['data'][0])) {
             return null;
         }
-        return join($context['sep'], $context['data']);
+        return implode($context['sep'], $context['data']);
     }
 
 
@@ -119,7 +118,6 @@ class Functions
         static $cache = [];
         if (!isset($cache[$pageid])) {
             $cache[$pageid] = page_exists($pageid);
-
         }
         return (int)$cache[$pageid];
     }
@@ -157,5 +155,4 @@ class Functions
         resolve_pageid($ns, $page, $exists);
         return $page;
     }
-
 }
