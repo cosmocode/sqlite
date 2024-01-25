@@ -21,8 +21,8 @@ class Functions
     {
         $pdo->sqliteCreateAggregate(
             'GROUP_CONCAT_DISTINCT',
-            [Functions::class, 'GroupConcatStep'],
-            [Functions::class, 'GroupConcatFinalize']
+            [Functions::class, 'groupConcatStep'],
+            [Functions::class, 'groupConcatFinalize']
         );
 
         $pdo->sqliteCreateFunction('GETACCESSLEVEL', [Functions::class, 'getAccessLevel'], 1);
@@ -42,8 +42,7 @@ class Functions
      * @param string $string column value
      * @param string $separator separator added between values
      */
-    // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-    public static function GroupConcatStep(&$context, $rownumber, $string, $separator = ',')
+    public static function groupConcatStep(&$context, $rownumber, $string, $separator = ',')
     {
         if (is_null($context)) {
             $context = [
@@ -65,8 +64,7 @@ class Functions
      * @param int $rownumber number of rows over which the aggregate was performed.
      * @return null|string
      */
-    // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
-    public static function GroupConcatFinalize(&$context, $rownumber)
+    public static function groupConcatFinalize(&$context, $rownumber)
     {
         if (!is_array($context)) {
             return null;
