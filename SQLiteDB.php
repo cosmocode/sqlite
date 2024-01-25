@@ -82,6 +82,21 @@ class SQLiteDB
     }
 
     /**
+     * Try optimizing the database before closing the connection.
+     *
+     * @see https://www.sqlite.org/pragma.html#pragma_optimize
+     */
+    public function __destruct()
+    {
+        try {
+            $this->exec("PRAGMA analysis_limit=400");
+            $this->exec('PRAGMA optimize;');
+        } catch (\Exception $e) {
+            // ignore failures, this is not essential and not available until 3.18.0.
+        }
+    }
+
+    /**
      * Do not serialize the DB connection
      *
      * @return array
