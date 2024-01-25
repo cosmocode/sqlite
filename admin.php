@@ -90,7 +90,10 @@ class admin_plugin_sqlite extends AdminPlugin
             case 'download':
                 $file = $this->db->getDbFile();
                 header('Content-Type: application/vnd.sqlite3');
-                header('Content-Disposition: attachment; filename="' . $this->db->getDbName() . SQLiteDB::FILE_EXTENSION . '"');
+                header(
+                    'Content-Disposition: attachment; filename="'
+                    . $this->db->getDbName() . SQLiteDB::FILE_EXTENSION . '"'
+                );
                 readfile($file);
                 exit(0);
         }
@@ -149,7 +152,12 @@ class admin_plugin_sqlite extends AdminPlugin
         $dbfiles = glob($conf['metadir'] . '/*.sqlite3');
         if (is_array($dbfiles)) foreach ($dbfiles as $file) {
             $db = basename($file, '.sqlite3');
-            $toc[] = ['link' => wl($ID, ['do' => 'admin', 'page' => 'sqlite', 'db' => $db, 'sectok' => getSecurityToken()]), 'title' => $db, 'level' => 2, 'type' => 'ul'];
+            $toc[] = [
+                'link' => wl($ID, ['do' => 'admin', 'page' => 'sqlite', 'db' => $db, 'sectok' => getSecurityToken()]),
+                'title' => $db,
+                'level' => 2,
+                'type' => 'ul',
+            ];
         }
 
         return $toc;

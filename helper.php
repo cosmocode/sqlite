@@ -10,6 +10,9 @@ use dokuwiki\Extension\Plugin;
 use dokuwiki\plugin\sqlite\SQLiteDB;
 use dokuwiki\plugin\sqlite\Tools;
 
+// phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols, PSR1.Classes.ClassDeclaration.MultipleClasses
+// phpcs:disable PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+
 /**
  * For compatibility with previous adapter implementation.
  */

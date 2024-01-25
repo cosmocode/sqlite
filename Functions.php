@@ -42,6 +42,7 @@ class Functions
      * @param string $string column value
      * @param string $separator separator added between values
      */
+    // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     public static function GroupConcatStep(&$context, $rownumber, $string, $separator = ',')
     {
         if (is_null($context)) {
@@ -64,6 +65,7 @@ class Functions
      * @param int $rownumber number of rows over which the aggregate was performed.
      * @return null|string
      */
+    // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
     public static function GroupConcatFinalize(&$context, $rownumber)
     {
         if (!is_array($context)) {
