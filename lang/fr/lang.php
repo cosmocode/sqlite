@@ -14,6 +14,7 @@ $lang['index']                 = 'afficher les index';
 $lang['table']                 = 'afficher les tables';
 $lang['btn_execute']           = 'Exécuter la requête';
 $lang['export']                = 'exporter la base de données';
+$lang['download']              = 'Télécharger le fichier de base de données.';
 $lang['import']                = 'importer la base de données';
 $lang['import_no_file']        = 'Sélectionner un fichier';
 $lang['import_success']        = 'Base de données importée avec succès';
