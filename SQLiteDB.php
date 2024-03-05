@@ -245,9 +245,7 @@ class SQLiteDB
      */
     public function saveRecord($table, $data, $replace = true)
     {
-        $columns = array_map(function ($column) {
-            return '"' . $column . '"';
-        }, array_keys($data));
+        $columns = array_map(static fn($column) => '"' . $column . '"', array_keys($data));
         $values = array_values($data);
         $placeholders = array_pad([], count($columns), '?');
 

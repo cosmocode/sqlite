@@ -158,11 +158,8 @@ class helper_plugin_sqlite extends Plugin
      *
      * @param string ...$args - the arguments of query(), the first is the sql and others are values
      */
-    public function query()
+    public function query(...$args)
     {
-        // get function arguments
-        $args = func_get_args();
-
         // clear the cache
         $this->data = null;
 
