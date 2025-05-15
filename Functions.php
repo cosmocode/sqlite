@@ -106,7 +106,7 @@ class Functions
      * Check if a page is hidden
      *
      * @param string $pageid
-     * @return bool true if the page is hidden
+     * @return int 1 if the page is hidden
      */
     public static function pageIsHidden($pageid)
     {
@@ -116,7 +116,7 @@ class Functions
         }
 
 
-        $ishidden = isHiddenPage($pageid);
+        $ishidden = (int) isHiddenPage($pageid);
         $hiddenCache[$pageid] = $ishidden;
         return $ishidden;
     }
