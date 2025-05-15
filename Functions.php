@@ -26,6 +26,7 @@ class Functions
         );
 
         $pdo->sqliteCreateFunction('GETACCESSLEVEL', [Functions::class, 'getAccessLevel'], 1);
+        $pdo->sqliteCreateFunction('PAGEISHIDDEN', [Functions::class, 'pageIsHidden'], 1);
         $pdo->sqliteCreateFunction('PAGEEXISTS', [Functions::class, 'pageExists'], 1);
         $pdo->sqliteCreateFunction('REGEXP', [Functions::class, 'regExp'], 2);
         $pdo->sqliteCreateFunction('CLEANID', 'cleanID', 1);
@@ -96,13 +97,28 @@ class Functions
             return $aclcache[$pageid];
         }
 
-        if (isHiddenPage($pageid)) {
-            $acl = AUTH_NONE;
-        } else {
-            $acl = auth_quickaclcheck($pageid);
-        }
+        $acl = auth_quickaclcheck($pageid);
         $aclcache[$pageid] = $acl;
         return $acl;
+    }
+
+    /**
+     * Check if a page is hidden
+     *
+     * @param string $pageid
+     * @return bool true if the page is hidden
+     */
+    public static function pageIsHidden($pageid)
+    {
+        static $hiddenCache = [];
+        if (isset($hiddenCache[$pageid])) {
+            return $hiddenCache[$pageid];
+        }
+
+
+        $ishidden = isHiddenPage($pageid);
+        $hiddenCache[$pageid] = $ishidden;
+        return $ishidden;
     }
 
     /**
