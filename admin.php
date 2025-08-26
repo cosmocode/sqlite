@@ -236,6 +236,8 @@ class admin_plugin_sqlite extends AdminPlugin
     protected function selfLink($form = true, $params = [])
     {
         global $ID;
+        if(isset($params['info'])) unset($params['info']);
+
         $params = array_merge(
             [
                 'do' => 'admin',
@@ -268,7 +270,8 @@ class admin_plugin_sqlite extends AdminPlugin
                 'cmd' => 'export'
             ],
             'download' => [
-                'cmd' => 'download'
+                'cmd' => 'download',
+                'info' => filesize_h(filesize($this->db->getDbFile()))
             ],
         ];
 
@@ -286,6 +289,9 @@ class admin_plugin_sqlite extends AdminPlugin
         foreach ($commands as $label => $command) {
             echo '<li><div class="li">';
             echo '<a href="' . $this->selfLink(false, $command) . '">' . $this->getLang($label) . '</a>';
+            if(isset($command['info'])) {
+                echo ' (' . $command['info'] . ')';
+            }
             echo '</div></li>';
         }
         echo '<li><div class="li">';
