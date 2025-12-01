@@ -1,12 +1,15 @@
-# This is a list of files that were present in previous plugin releases
-# but were removed later. An up to date plugin should not have any of
-# the files installed
-
+# This is a list of files that were present in previous releases
+# but were removed later. They should not exist in your installation.
+.github/workflows/phpTestLinux.yml
+.travis.yml
+Update.php
 _test/AbstractTest.php
 _test/Sqlite2Test.php
+_test/sqlite_helper_abstract.test.php
+_test/sqlite_helper_sqlite2.test.php
 classes/adapter.php
 classes/adapter_null.php
 classes/adapter_pdosqlite.php
 classes/adapter_sqlite2.php
-classes/
 style.css
+syntax/query.php
